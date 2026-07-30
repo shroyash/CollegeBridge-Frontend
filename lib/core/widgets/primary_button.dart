@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../app/theme/app_colors.dart';
-import '../../app/theme/app_radius.dart';
 import '../../app/theme/app_spacing.dart';
 
 class PrimaryButton extends StatefulWidget {
@@ -24,19 +23,28 @@ class PrimaryButton extends StatefulWidget {
   State<PrimaryButton> createState() => _PrimaryButtonState();
 }
 
-class _PrimaryButtonState extends State<PrimaryButton> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
+class _PrimaryButtonState extends State<PrimaryButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _scaleAnimation;
 
   @override
   void initState() {
     super.initState();
+
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 100),
     );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.97).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.97,
+    ).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeInOut,
+      ),
     );
   }
 
@@ -66,7 +74,7 @@ class _PrimaryButtonState extends State<PrimaryButton> with SingleTickerProvider
 
   @override
   Widget build(BuildContext context) {
-    final bool isEnabled = widget.onPressed != null && !widget.isLoading;
+    final isEnabled = widget.onPressed != null && !widget.isLoading;
 
     return Semantics(
       button: true,
@@ -79,13 +87,15 @@ class _PrimaryButtonState extends State<PrimaryButton> with SingleTickerProvider
         child: ScaleTransition(
           scale: _scaleAnimation,
           child: SizedBox(
-            height: widget.height,
             width: double.infinity,
+            height: widget.height,
             child: ElevatedButton(
               onPressed: isEnabled ? widget.onPressed : null,
               style: ElevatedButton.styleFrom(
-                disabledBackgroundColor: AppColors.primary.withOpacity(0.5),
-                disabledForegroundColor: Colors.white.withOpacity(0.7),
+                disabledBackgroundColor:
+                    AppColors.primary.withOpacity(0.5),
+                disabledForegroundColor:
+                    Colors.white.withOpacity(0.7),
                 elevation: 0,
                 shape: const RoundedRectangleBorder(
                   borderRadius: AppRadius.borderMd,
@@ -97,15 +107,21 @@ class _PrimaryButtonState extends State<PrimaryButton> with SingleTickerProvider
                       height: 24,
                       child: CircularProgressIndicator(
                         strokeWidth: 2.5,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
                     )
                   : Row(
-                      mainAxisAlignment: MainCenter: MainAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         if (widget.icon != null) ...[
-                          Icon(widget.icon, size: 20),
-                          const SizedBox(width: AppSpacing.sm),
+                          Icon(
+                            widget.icon,
+                            size: 20,
+                          ),
+                          const SizedBox(
+                            width: AppSpacing.sm,
+                          ),
                         ],
                         Text(
                           widget.text,

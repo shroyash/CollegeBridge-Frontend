@@ -1,84 +1,98 @@
 import 'package:flutter/material.dart';
 
-import '../../../../app/theme/app_colors.dart';
-import '../../../../app/theme/app_spacing.dart';
-import '../../../../app/theme/app_typography.dart';
+import '../../../../../app/theme/app_colors.dart';
 
+/// Reusable styled text field for auth screens.
+/// Matches the design with label above, rounded border, and icon.
 class AuthTextField extends StatelessWidget {
   final String label;
   final String hint;
-  final String? errorText;
-  final TextEditingController? controller;
-  final ValueChanged<String>? onChanged;
+  final TextEditingController controller;
+  final Widget? suffixIcon;
+  final bool obscureText;
   final TextInputType keyboardType;
+  final String? Function(String?)? validator;
   final TextInputAction textInputAction;
   final FocusNode? focusNode;
-  final FocusNode? nextFocusNode;
-  final IconData? prefixIcon;
-  final Widget? suffixIcon;
-  final bool enabled;
+  final VoidCallback? onEditingComplete;
 
   const AuthTextField({
     super.key,
     required this.label,
     required this.hint,
-    this.errorText,
-    this.controller,
-    this.onChanged,
+    required this.controller,
+    this.suffixIcon,
+    this.obscureText = false,
     this.keyboardType = TextInputType.text,
+    this.validator,
     this.textInputAction = TextInputAction.next,
     this.focusNode,
-    this.nextFocusNode,
-    this.prefixIcon,
-    this.suffixIcon,
-    this.enabled = true,
+    this.onEditingComplete,
   });
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Semantics(
-          label: label,
-          child: Text(
-            label,
-            style: AppTypography.titleMedium(isDark: isDark).copyWith(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
+        Text(
+          label.toUpperCase(),
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.8,
+            color: Color(0xFF64748B),
           ),
         ),
-        const SizedBox(height: AppSpacing.xs),
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          child: TextField(
-            controller: controller,
-            onChanged: onChanged,
-            focusNode: focusNode,
-            enabled: enabled,
-            keyboardType: keyboardType,
-            textInputAction: textInputAction,
-            onSubmitted: (_) {
-              if (nextFocusNode != null) {
-                FocusScope.of(context).requestFocus(nextFocusNode);
-              }
-            },
-            style: AppTypography.bodyLarge(isDark: isDark),
-            decoration: InputDecoration(
-              hintText: hint,
-              errorText: errorText,
-              prefixIcon: prefixIcon != null
-                  ? Icon(
-                      prefixIcon,
-                      size: 20,
-                      color: isDark ? AppColors.textMutedDark : AppColors.textMutedLight,
-                    )
-                  : null,
-              suffixIcon: suffixIcon,
+        const SizedBox(height: 6),
+        TextFormField(
+          controller: controller,
+          obscureText: obscureText,
+          keyboardType: keyboardType,
+          textInputAction: textInputAction,
+          focusNode: focusNode,
+          onEditingComplete: onEditingComplete,
+          validator: validator,
+          style: const TextStyle(
+            fontSize: 15,
+            color: Color(0xFF1E293B),
+            fontWeight: FontWeight.w500,
+          ),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: const TextStyle(
+              color: Color(0xFFB0BAC8),
+              fontSize: 14,
+              fontWeight: FontWeight.w400,
             ),
+            suffixIcon: suffixIcon,
+            filled: true,
+            fillColor: const Color(0xFFF8FAFC),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: AppColors.primary, width: 2),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: Color(0xFFEF4444), width: 1.5),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: Color(0xFFEF4444), width: 2),
+            ),
+            errorStyle: const TextStyle(fontSize: 12, color: Color(0xFFEF4444)),
           ),
         ),
       ],

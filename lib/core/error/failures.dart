@@ -11,41 +11,82 @@ abstract class Failure extends Equatable {
 }
 
 class ServerFailure extends Failure {
-  const ServerFailure(super.message, {super.statusCode});
+  const ServerFailure(
+    super.message, {
+    super.statusCode,
+  });
 }
 
 class ValidationFailure extends Failure {
   final Map<String, String>? fieldErrors;
-  const ValidationFailure(super.message, {super.statusCode, this.fieldErrors});
+
+  const ValidationFailure(
+    super.message, {
+    super.statusCode,
+    this.fieldErrors,
+  });
 
   @override
-  List<Object?> get props => [message, statusCode, fieldErrors];
+  List<Object?> get props => [
+        message,
+        statusCode,
+        fieldErrors,
+      ];
 }
 
 class UnauthorizedFailure extends Failure {
-  const UnauthorizedFailure([super.message = 'Invalid credentials. Please try again.', super.statusCode = 401]);
+  const UnauthorizedFailure([
+    String message = 'Invalid credentials. Please try again.',
+  ]) : super(
+          message,
+          statusCode: 401,
+        );
 }
 
 class ForbiddenFailure extends Failure {
-  const ForbiddenFailure([super.message = 'Your account is not verified yet.', super.statusCode = 403]);
+  const ForbiddenFailure([
+    String message = 'Your account is not verified yet.',
+  ]) : super(
+          message,
+          statusCode: 403,
+        );
 }
 
 class NotFoundFailure extends Failure {
-  const NotFoundFailure([super.message = 'User account not found.', super.statusCode = 404]);
+  const NotFoundFailure([
+    String message = 'User account not found.',
+  ]) : super(
+          message,
+          statusCode: 404,
+        );
 }
 
 class ConflictFailure extends Failure {
-  const ConflictFailure([super.message = 'An account with this email already exists.', super.statusCode = 409]);
+  const ConflictFailure([
+    String message = 'An account with this email already exists.',
+  ]) : super(
+          message,
+          statusCode: 409,
+        );
 }
 
 class RateLimitFailure extends Failure {
-  const RateLimitFailure([super.message = 'Too many attempts. Please try again later.', super.statusCode = 429]);
+  const RateLimitFailure([
+    String message = 'Too many attempts. Please try again later.',
+  ]) : super(
+          message,
+          statusCode: 429,
+        );
 }
 
 class NetworkFailure extends Failure {
-  const NetworkFailure([super.message = 'No internet connection. Please check your network.']);
+  const NetworkFailure([
+    String message = 'No internet connection. Please check your network.',
+  ]) : super(message);
 }
 
 class UnknownFailure extends Failure {
-  const UnknownFailure([super.message = 'An unexpected error occurred.']);
+  const UnknownFailure([
+    String message = 'An unexpected error occurred.',
+  ]) : super(message);
 }
