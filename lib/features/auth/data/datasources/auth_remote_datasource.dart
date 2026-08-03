@@ -68,6 +68,63 @@ class AuthRemoteDataSource {
     }
   }
 
+  /// POST /api/auth/forgot-password
+  Future<void> forgotPassword({required String email}) async {
+    try {
+      await _apiClient.post<dynamic>(
+        ApiConstants.forgotPassword,
+        data: {'email': email},
+      );
+    } on DioException catch (e) {
+      throw _mapDioException(e);
+    }
+  }
+
+  /// POST /api/auth/verify-otp
+  /// Sends { email, code, type: "PASSWORD_RESET" }
+  /// Returns a [verificationToken] used for the reset-password step.
+  Future<String> verifyOtp({
+    required String email,
+    required String code,
+  }) async {
+    try {
+      final response = await _apiClient.post<Map<String, dynamic>>(
+        ApiConstants.verifyOtp,
+        data: {
+          'email': email,
+          'code': code,
+          'type': 'PASSWORD_RESET',
+        },
+      );
+      final data = response.data!['data'] as Map<String, dynamic>;
+      return data['verificationToken'] as String;
+    } on DioException catch (e) {
+      throw _mapDioException(e);
+    }
+  }
+
+  /// POST /api/auth/reset-password
+  /// Sends { email, verificationToken, newPassword }
+  Future<void> resetPassword({
+    required String email,
+    required String verificationToken,
+    required String newPassword,
+  }) async {
+    try {
+      await _apiClient.post<dynamic>(
+        ApiConstants.resetPassword,
+        data: {
+          'email': email,
+          'verificationToken': verificationToken,
+          'newPassword': newPassword,
+        },
+      );
+    } on DioException catch (e) {
+      throw _mapDioException(e);
+    }
+  }
+
+
   Exception _mapDioException(DioException e) {
     final statusCode = e.response?.statusCode;
     final message = _extractMessage(e);

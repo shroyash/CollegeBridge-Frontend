@@ -13,4 +13,10 @@ static const String baseUrl = 'http://localhost:8080';
   static const String forgotPassword = '/api/auth/forgot-password';
   static const String verifyOtp = '/api/auth/verify-otp';
   static const String resetPassword = '/api/auth/reset-password';
+
+  // Dashboard
+  static const String adminDashboard = '/api/admin/dashboard';
+
+  // Academic
+  static const String mySubjects = '/api/academic/subjects/my-subjects';
 }

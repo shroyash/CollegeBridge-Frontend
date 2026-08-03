@@ -34,6 +34,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
         refreshToken: user.refreshToken,
       );
       await _storageService.saveUserEmail(user.email);
+      await _storageService.saveUserName(user.name);
+      await _storageService.saveUserRole(user.role);
       state = AuthSuccess(user);
     } catch (e) {
       state = AuthFailure(e.toString().replaceFirst('Exception: ', ''));
@@ -61,6 +63,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
         refreshToken: user.refreshToken,
       );
       await _storageService.saveUserEmail(user.email);
+      await _storageService.saveUserName(user.name);
+      await _storageService.saveUserRole(user.role);
       state = AuthSuccess(user);
     } catch (e) {
       state = AuthFailure(e.toString().replaceFirst('Exception: ', ''));

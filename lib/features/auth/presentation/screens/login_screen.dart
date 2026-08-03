@@ -12,12 +12,14 @@ class LoginScreen extends ConsumerStatefulWidget {
   final VoidCallback onNavigateToRegister;
   final VoidCallback onLoginSuccess;
   final VoidCallback onBack;
+  final VoidCallback onForgotPassword;
 
   const LoginScreen({
     super.key,
     required this.onNavigateToRegister,
     required this.onLoginSuccess,
     required this.onBack,
+    required this.onForgotPassword,
   });
 
   @override
@@ -167,7 +169,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
-                    onPressed: () {},
+                    onPressed: widget.onForgotPassword,
                     style: TextButton.styleFrom(
                       padding: const EdgeInsets.symmetric(
                           vertical: 8, horizontal: 0),
@@ -244,20 +246,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ],
                   ),
                 ),
-
-                const SizedBox(height: 32),
-
-                // ── Quick Insight card ──
-                AuthInfoCard(
-                  icon: Icons.flash_on_rounded,
-                  iconColor: const Color(0xFFF59E0B),
-                  iconBgColor: const Color(0xFFFEF3C7),
-                  title: 'Quick Insight',
-                  description:
-                      'Last login from a MacBook Pro in New York. If this wasn\'t you, reset your password immediately.',
-                ),
-
-                const SizedBox(height: 24),
               ],
             ),
           ),

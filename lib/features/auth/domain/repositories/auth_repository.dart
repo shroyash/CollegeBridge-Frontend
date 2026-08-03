@@ -1,8 +1,7 @@
 import '../entities/auth_user.dart';
 import '../entities/faculty.dart';
 
-/// Abstract contract that the data layer must fulfill.
-/// The domain layer knows nothing about Dio, HTTP, or JSON.
+
 abstract class AuthRepository {
   Future<AuthUser> login({
     required String email,
@@ -18,4 +17,15 @@ abstract class AuthRepository {
   });
 
   Future<void> logout({required String refreshToken});
+
+  Future<void> forgotPassword({required String email});
+
+  /// Returns the [verificationToken] to be passed to [resetPassword].
+  Future<String> verifyOtp({required String email, required String code});
+
+  Future<void> resetPassword({
+    required String email,
+    required String verificationToken,
+    required String newPassword,
+  });
 }
