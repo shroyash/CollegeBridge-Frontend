@@ -17,6 +17,16 @@ static const String baseUrl = 'http://localhost:8080';
   // Dashboard
   static const String adminDashboard = '/api/admin/dashboard';
 
+  // Admin Users & Teachers
+  static const String adminUsersFilter = '/api/admin/users/filter';
+  static const String adminUsersSearch = '/api/admin/users/search';
+  static const String adminUsers = '/api/admin/users';
+  static const String adminTeachers = '/api/admin/teachers';
+  static const String adminTeacherAssignments = '/api/v1/admin/teachers';
+
   // Academic
   static const String mySubjects = '/api/academic/subjects/my-subjects';
+  static const String academicSubjectsAll = '/api/academic/subjects/all';
+  static const String academicSubjectsSearch = '/api/academic/subjects/search';
+  static const String academicStudentSubjects = '/api/academic/subjects/student';
 }

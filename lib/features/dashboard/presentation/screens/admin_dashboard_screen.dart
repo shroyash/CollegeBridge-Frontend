@@ -7,6 +7,8 @@ import '../../domain/entities/dashboard_metric.dart';
 import '../widgets/metric_card.dart';
 import '../widgets/quick_action_tile.dart';
 
+import '../../../admin_users/presentation/screens/manage_users_screen.dart';
+
 class AdminDashboardScreen extends ConsumerStatefulWidget {
   final String userName;
   const AdminDashboardScreen({super.key, required this.userName});
@@ -144,7 +146,14 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                                       icon: Icons.people_outline,
                                       iconColor: const Color(0xFF2563EB),
                                       iconBackgroundColor: const Color(0xFFDBEAFE),
-                                      onTap: () {},
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => const ManageUsersScreen(),
+                                          ),
+                                        );
+                                      },
                                     ),
                                     QuickActionTile(
                                       title: 'Manage Classes',
@@ -207,6 +216,16 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
         selectedItemColor: const Color(0xFF2563EB),
         unselectedItemColor: const Color(0xFF64748B),
         showUnselectedLabels: true,
+        onTap: (index) {
+          if (index == 2) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ManageUsersScreen(),
+              ),
+            );
+          }
+        },
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.campaign_outlined), label: 'Broadcast'),
