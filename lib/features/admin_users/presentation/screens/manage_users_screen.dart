@@ -196,7 +196,50 @@ class _ManageUsersScreenState extends ConsumerState<ManageUsersScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 4),
+
+          // Status Filter Chips (Active | Suspended)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
+            child: Row(
+              children: [
+                FilterChip(
+                  label: const Text('Active'),
+                  selected: notifier.currentStatus == 'ACTIVE',
+                  onSelected: (selected) {
+                    if (selected) notifier.selectStatusTab('ACTIVE');
+                  },
+                  selectedColor: const Color(0xFFDBEAFE),
+                  checkmarkColor: const Color(0xFF2563EB),
+                  labelStyle: TextStyle(
+                    color: notifier.currentStatus == 'ACTIVE'
+                        ? const Color(0xFF1E40AF)
+                        : const Color(0xFF64748B),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                FilterChip(
+                  label: const Text('Suspended'),
+                  selected: notifier.currentStatus == 'SUSPENDED',
+                  onSelected: (selected) {
+                    if (selected) notifier.selectStatusTab('SUSPENDED');
+                  },
+                  selectedColor: const Color(0xFFFEE2E2),
+                  checkmarkColor: const Color(0xFFDC2626),
+                  labelStyle: TextStyle(
+                    color: notifier.currentStatus == 'SUSPENDED'
+                        ? const Color(0xFF991B1B)
+                        : const Color(0xFF64748B),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
 
           // User List View
           Expanded(
@@ -236,7 +279,7 @@ class _ManageUsersScreenState extends ConsumerState<ManageUsersScreen> {
                                     if (notifier.currentRole == 'TEACHER') {
                                       return _buildTeacherCard(context, user, notifier);
                                     } else {
-                                      return _buildStudentCard(context, user);
+                                      return _buildStudentCard(context, user, notifier);
                                     }
                                   },
                                 )
@@ -368,7 +411,7 @@ class _ManageUsersScreenState extends ConsumerState<ManageUsersScreen> {
                       context,
                       MaterialPageRoute(
                         builder: (context) => AssignClassesScreen(
-                          teacherId: user.userId,
+                          teacherId: user.teacherId!,
                           teacherName: user.name,
                         ),
                       ),
@@ -421,10 +464,22 @@ class _ManageUsersScreenState extends ConsumerState<ManageUsersScreen> {
                 );
 
                 if (confirm == true) {
-                  if (user.isActive) {
-                    await notifier.suspendUser(user.userId);
-                  } else {
-                    await notifier.activateUser(user.userId);
+                  final success = user.isActive
+                      ? await notifier.suspendUser(user.userId)
+                      : await notifier.activateUser(user.userId);
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          success
+                              ? 'Teacher ${user.isActive ? "suspended" : "activated"} successfully.'
+                              : 'Failed to update teacher status.',
+                        ),
+                        backgroundColor: success
+                            ? (user.isActive ? Colors.red : Colors.green)
+                            : Colors.red,
+                      ),
+                    );
                   }
                 }
               },
@@ -465,7 +520,8 @@ class _ManageUsersScreenState extends ConsumerState<ManageUsersScreen> {
     );
   }
 
-  Widget _buildStudentCard(BuildContext context, UserProfile user) {
+  Widget _buildStudentCard(
+      BuildContext context, UserProfile user, ManageUsersNotifier notifier) {
     final initials = user.name.isNotEmpty
         ? user.name.split(' ').map((e) => e.isNotEmpty ? e[0] : '').take(2).join()
         : 'ST';
@@ -615,6 +671,82 @@ class _ManageUsersScreenState extends ConsumerState<ManageUsersScreen> {
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () async {
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: Text(user.isActive ? 'Suspend Student' : 'Activate Student'),
+                    content: Text(
+                        'Are you sure you want to ${user.isActive ? "suspend" : "activate"} ${user.name}?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        child: const Text('Cancel'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, true),
+                        child: Text(user.isActive ? 'Suspend' : 'Activate'),
+                      ),
+                    ],
+                  ),
+                );
+
+                if (confirm == true) {
+                  final success = user.isActive
+                      ? await notifier.suspendUser(user.userId)
+                      : await notifier.activateUser(user.userId);
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          success
+                              ? 'Student ${user.isActive ? "suspended" : "activated"} successfully.'
+                              : 'Failed to update student status.',
+                        ),
+                        backgroundColor: success
+                            ? (user.isActive ? Colors.red : Colors.green)
+                            : Colors.red,
+                      ),
+                    );
+                  }
+                }
+              },
+              icon: Icon(
+                user.isActive
+                    ? Icons.block
+                    : Icons.check_circle_outline,
+                size: 16,
+                color: user.isActive
+                    ? const Color(0xFFDC2626)
+                    : const Color(0xFF16A34A),
+              ),
+              label: Text(
+                user.isActive ? 'Suspend' : 'Activate',
+                style: TextStyle(
+                  color: user.isActive
+                      ? const Color(0xFFDC2626)
+                      : const Color(0xFF16A34A),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                side: BorderSide(
+                  color: user.isActive
+                      ? const Color(0xFFFCA5A5)
+                      : const Color(0xFF86EFAC),
+                ),
+              ),
+            ),
           ),
         ],
       ),

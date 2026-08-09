@@ -55,6 +55,26 @@ class StudentDetailsDialog extends ConsumerWidget {
                           color: Color(0xFF64748B),
                         ),
                       ),
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: student.isActive
+                              ? const Color(0xFFDCFCE7)
+                              : const Color(0xFFFEE2E2),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          student.status.toUpperCase(),
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: student.isActive
+                                ? const Color(0xFF15803D)
+                                : const Color(0xFFB91C1C),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -148,12 +168,77 @@ class StudentDetailsDialog extends ConsumerWidget {
               },
             ),
             const SizedBox(height: 16),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Close'),
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        title: Text(student.isActive ? 'Suspend Student' : 'Activate Student'),
+                        content: Text(
+                            'Are you sure you want to ${student.isActive ? "suspend" : "activate"} ${student.name}?'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx, false),
+                            child: const Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx, true),
+                            child: Text(student.isActive ? 'Suspend' : 'Activate'),
+                          ),
+                        ],
+                      ),
+                    );
+
+                    if (confirm == true) {
+                      final notifier = ref.read(manageUsersNotifierProvider.notifier);
+                      final success = student.isActive
+                          ? await notifier.suspendUser(student.userId)
+                          : await notifier.activateUser(student.userId);
+                      if (context.mounted) {
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              success
+                                  ? 'Student ${student.isActive ? "suspended" : "activated"} successfully.'
+                                  : 'Failed to update student status.',
+                            ),
+                            backgroundColor: success
+                                ? (student.isActive ? Colors.red : Colors.green)
+                                : Colors.red,
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  icon: Icon(
+                    student.isActive ? Icons.block : Icons.check_circle_outline,
+                    size: 16,
+                    color: student.isActive ? const Color(0xFFDC2626) : const Color(0xFF16A34A),
+                  ),
+                  label: Text(
+                    student.isActive ? 'Suspend' : 'Activate',
+                    style: TextStyle(
+                      color: student.isActive ? const Color(0xFFDC2626) : const Color(0xFF16A34A),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    side: BorderSide(
+                      color: student.isActive ? const Color(0xFFFCA5A5) : const Color(0xFF86EFAC),
+                    ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Close'),
+                ),
+              ],
             ),
           ],
         ),

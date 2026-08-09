@@ -247,4 +247,20 @@ class AdminUserRemoteDataSource {
       throw _mapDioException(e);
     }
   }
+
+  /// GET /api/account/profile
+  Future<UserProfileModel> getMyProfile() async {
+    try {
+      final options = await _authOptions();
+      final response = await _apiClient.get<Map<String, dynamic>>(
+        '/api/account/profile',
+        options: options,
+      );
+
+      final data = response.data!['data'] as Map<String, dynamic>;
+      return UserProfileModel.fromJson(data);
+    } on DioException catch (e) {
+      throw _mapDioException(e);
+    }
+  }
 }

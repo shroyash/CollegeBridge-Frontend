@@ -64,6 +64,12 @@ class ManageUsersNotifier extends StateNotifier<ManageUsersState> {
     await fetchUsers();
   }
 
+  Future<void> selectStatusTab(String status) async {
+    if (_currentStatus == status) return;
+    _currentStatus = status;
+    await fetchUsers();
+  }
+
   Future<void> search(String query) async {
     _currentQuery = query;
     await fetchUsers();

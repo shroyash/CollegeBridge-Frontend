@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/storage/secure_storage_service.dart';
 import 'admin_dashboard_screen.dart';
 import 'student_dashboard_screen.dart';
+import 'teacher_dashboard_screen.dart';
 
 /// Role-router screen.
 /// Reads the user role from secure storage and routes to the appropriate dashboard.
@@ -49,6 +50,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     if (_role == 'ADMIN') {
       return AdminDashboardScreen(userName: userName);
+    } else if (_role == 'TEACHER') {
+      return TeacherDashboardScreen(userName: userName);
     } else {
       return StudentDashboardScreen(userName: userName);
     }

@@ -87,4 +87,9 @@ class AdminUserRepositoryImpl implements AdminUserRepository {
   Future<List<Subject>> searchSubjects(String name) {
     return _remoteDataSource.searchSubjects(name);
   }
+
+  @override
+  Future<UserProfile> getMyProfile() {
+    return _remoteDataSource.getMyProfile();
+  }
 }

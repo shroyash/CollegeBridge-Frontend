@@ -38,4 +38,6 @@ abstract class AdminUserRepository {
   Future<List<Subject>> getAllSubjects();
 
   Future<List<Subject>> searchSubjects(String name);
+
+  Future<UserProfile> getMyProfile();
 }

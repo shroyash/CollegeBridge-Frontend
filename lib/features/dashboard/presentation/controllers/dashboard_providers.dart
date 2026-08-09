@@ -9,9 +9,13 @@ import '../../data/repositories/dashboard_repository_impl.dart';
 import '../../domain/repositories/dashboard_repository.dart';
 import '../../domain/usecases/get_admin_dashboard_usecase.dart';
 import '../../domain/usecases/get_my_subjects_usecase.dart';
+import '../../../admin_users/domain/entities/teacher_assignment.dart';
+import '../../../admin_users/presentation/controllers/manage_users_providers.dart';
 import 'admin_dashboard_notifier.dart';
 import 'dashboard_state.dart';
+import 'profile_notifier.dart';
 import 'student_dashboard_notifier.dart';
+import 'teacher_dashboard_notifier.dart';
 
 // ── Infrastructure ─────────────────────────────────────────────────────────
 
@@ -56,4 +60,15 @@ final adminDashboardNotifierProvider = StateNotifierProvider<
 final studentDashboardNotifierProvider = StateNotifierProvider<
     StudentDashboardNotifier, DashboardState<List<Subject>>>((ref) {
   return StudentDashboardNotifier(ref.watch(getMySubjectsUseCaseProvider));
+});
+
+final teacherDashboardNotifierProvider = StateNotifierProvider<
+    TeacherDashboardNotifier, DashboardState<List<TeacherAssignment>>>((ref) {
+  return TeacherDashboardNotifier(
+      ref.watch(manageTeacherAssignmentsUseCaseProvider));
+});
+
+final profileNotifierProvider =
+    StateNotifierProvider<ProfileNotifier, ProfileState>((ref) {
+  return ProfileNotifier(ref.watch(manageTeacherAssignmentsUseCaseProvider));
 });
