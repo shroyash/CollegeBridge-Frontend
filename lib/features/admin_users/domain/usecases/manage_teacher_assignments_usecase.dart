@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import '../entities/teacher_assignment.dart';
 import '../entities/user_profile.dart';
 import '../repositories/admin_user_repository.dart';
@@ -29,5 +31,17 @@ class ManageTeacherAssignmentsUseCase {
 
   Future<List<Subject>> searchSubjects(String query) {
     return _repository.searchSubjects(query);
+  }
+
+  Future<UserProfile> updateProfile({required String name}) {
+    return _repository.updateProfile(name: name);
+  }
+
+  Future<String> uploadProfileImage(File imageFile) {
+    return _repository.uploadProfileImage(imageFile);
+  }
+
+  Future<void> logout() {
+    return _repository.logout();
   }
 }

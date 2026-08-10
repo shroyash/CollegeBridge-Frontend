@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import '../entities/user_profile.dart';
 import '../entities/teacher_assignment.dart';
 import '../../../dashboard/domain/entities/subject.dart';
@@ -40,4 +42,10 @@ abstract class AdminUserRepository {
   Future<List<Subject>> searchSubjects(String name);
 
   Future<UserProfile> getMyProfile();
+
+  Future<UserProfile> updateProfile({required String name});
+
+  Future<String> uploadProfileImage(File imageFile);
+
+  Future<void> logout();
 }

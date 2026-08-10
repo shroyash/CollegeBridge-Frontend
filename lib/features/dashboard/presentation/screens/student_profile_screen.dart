@@ -1,12 +1,16 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../controllers/dashboard_providers.dart';
 import '../controllers/profile_notifier.dart';
 
 class StudentProfileScreen extends ConsumerStatefulWidget {
   final VoidCallback? onBack;
-  const StudentProfileScreen({super.key, this.onBack});
+  final VoidCallback? onLogout;
+  const StudentProfileScreen({super.key, this.onBack, this.onLogout});
 
   @override
   ConsumerState<StudentProfileScreen> createState() =>
@@ -27,14 +31,51 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
-      body: SafeArea(
-        child: profileState is ProfileLoading
-            ? const Center(child: CircularProgressIndicator())
-            : profileState is ProfileFailure
-                ? _buildError((profileState).message)
-                : profileState is ProfileSuccess
-                    ? _buildContent(context, profileState)
-                    : const SizedBox.shrink(),
+      body: Column(
+        children: [
+          // ── Blue header banner ──────────────────────────────────────────
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(20, 52, 20, 20),
+            decoration: const BoxDecoration(
+              color: Color(0xFF2563EB),
+            ),
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'My Profile',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  'Manage your personal information',
+                  style: TextStyle(
+                    color: Color(0xFFBFDBFE),
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // ── Body ──────────────────────────────────────────────────────
+          Expanded(
+            child: SafeArea(
+              top: false,
+              child: profileState is ProfileLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : profileState is ProfileFailure
+                      ? _buildError((profileState).message)
+                      : profileState is ProfileSuccess
+                          ? _buildContent(context, profileState)
+                          : const SizedBox.shrink(),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -72,28 +113,39 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen> {
           Stack(
             alignment: Alignment.center,
             children: [
-              CircleAvatar(
-                radius: 48,
-                backgroundColor: const Color(0xFFCBD5E1),
-                backgroundImage:
-                    p.imageUrl != null ? NetworkImage(p.imageUrl!) : null,
-                child: p.imageUrl == null
-                    ? const Icon(Icons.person,
-                        size: 48, color: Color(0xFF475569))
-                    : null,
+              GestureDetector(
+                onTap: state.isSaving ? null : () => _pickAndUploadImage(),
+                child: CircleAvatar(
+                  radius: 48,
+                  backgroundColor: const Color(0xFFCBD5E1),
+                  backgroundImage:
+                      p.imageUrl != null ? NetworkImage(p.imageUrl!) : null,
+                  child: p.imageUrl == null
+                      ? const Icon(Icons.person,
+                          size: 48, color: Color(0xFF475569))
+                      : null,
+                ),
               ),
               Positioned(
                 bottom: 0,
                 right: 0,
-                child: Container(
-                  width: 26,
-                  height: 26,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF2563EB),
-                    shape: BoxShape.circle,
+                child: GestureDetector(
+                  onTap: state.isSaving ? null : () => _pickAndUploadImage(),
+                  child: Container(
+                    width: 26,
+                    height: 26,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF2563EB),
+                      shape: BoxShape.circle,
+                    ),
+                    child: state.isSaving
+                        ? const Padding(
+                            padding: EdgeInsets.all(4),
+                            child: CircularProgressIndicator(
+                                color: Colors.white, strokeWidth: 2))
+                        : const Icon(Icons.camera_alt,
+                            color: Colors.white, size: 14),
                   ),
-                  child: const Icon(Icons.edit,
-                      color: Colors.white, size: 14),
                 ),
               ),
             ],
@@ -116,9 +168,10 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen> {
 
           // ── Edit Profile button ──────────────────────────────────────────
           OutlinedButton.icon(
-            onPressed: () => _showEditDialog(context, p.name),
-            icon: const Icon(Icons.edit_outlined, size: 16,
-                color: Color(0xFF2563EB)),
+            onPressed:
+                state.isSaving ? null : () => _showEditDialog(context, p.name),
+            icon: const Icon(Icons.edit_outlined,
+                size: 16, color: Color(0xFF2563EB)),
             label: const Text('Edit Profile',
                 style: TextStyle(color: Color(0xFF2563EB), fontSize: 13)),
             style: OutlinedButton.styleFrom(
@@ -292,6 +345,24 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen> {
     );
   }
 
+  Future<void> _pickAndUploadImage() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+    if (picked == null) return;
+
+    final ok = await ref
+        .read(profileNotifierProvider.notifier)
+        .uploadProfileImage(File(picked.path));
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(ok ? 'Profile photo updated!' : 'Failed to upload photo'),
+        backgroundColor:
+            ok ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
+      ));
+    }
+  }
+
   void _showEditDialog(BuildContext context, String currentName) {
     final controller = TextEditingController(text: currentName);
     showDialog(
@@ -353,10 +424,14 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen> {
               onPressed: () => Navigator.pop(ctx),
               child: const Text('Cancel')),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(ctx);
-              Navigator.of(context)
-                  .pushNamedAndRemoveUntil('/login', (r) => false);
+              await ref
+                  .read(profileNotifierProvider.notifier)
+                  .logoutAndClear();
+              if (widget.onLogout != null) {
+                widget.onLogout!();
+              }
             },
             style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFDC2626)),

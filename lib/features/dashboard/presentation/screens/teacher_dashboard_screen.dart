@@ -9,11 +9,13 @@ import 'teacher_profile_screen.dart';
 class TeacherDashboardScreen extends ConsumerStatefulWidget {
   final String userName;
   final int teacherId;
+  final VoidCallback? onLogout;
 
   const TeacherDashboardScreen({
     super.key,
     required this.userName,
     this.teacherId = 1,
+    this.onLogout,
   });
 
   @override
@@ -83,7 +85,8 @@ class _TeacherDashboardScreenState
             // 2 – Notifications (placeholder)
             const Center(child: Text('Notifications')),
             // 3 – Profile
-            TeacherProfileScreen(totalClasses: totalClasses),
+            TeacherProfileScreen(
+                totalClasses: totalClasses, onLogout: widget.onLogout),
           ],
         ),
       ),

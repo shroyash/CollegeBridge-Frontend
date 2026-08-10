@@ -22,8 +22,6 @@ import 'teacher_dashboard_notifier.dart';
 // Re-use core providers (assume these might be defined globally, but for modularity we declare them here or import them)
 // We'll create local instances since Riverpod providers are just global variables.
 final _apiClientProvider = Provider<ApiClient>((ref) => ApiClient());
-final _secureStorageProvider =
-    Provider<SecureStorageService>((ref) => SecureStorageService());
 
 // ── Data Layer ─────────────────────────────────────────────────────────────
 
@@ -31,7 +29,7 @@ final dashboardRemoteDataSourceProvider =
     Provider<DashboardRemoteDataSource>((ref) {
   return DashboardRemoteDataSource(
     ref.watch(_apiClientProvider),
-    ref.watch(_secureStorageProvider),
+    ref.watch(secureStorageProvider),
   );
 });
 
@@ -70,5 +68,8 @@ final teacherDashboardNotifierProvider = StateNotifierProvider<
 
 final profileNotifierProvider =
     StateNotifierProvider<ProfileNotifier, ProfileState>((ref) {
-  return ProfileNotifier(ref.watch(manageTeacherAssignmentsUseCaseProvider));
+  return ProfileNotifier(
+    ref.watch(manageTeacherAssignmentsUseCaseProvider),
+    ref.watch(secureStorageProvider),
+  );
 });

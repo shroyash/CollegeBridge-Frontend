@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import '../../domain/entities/teacher_assignment.dart';
 import '../../domain/entities/user_profile.dart';
 import '../../domain/repositories/admin_user_repository.dart';
@@ -91,5 +93,20 @@ class AdminUserRepositoryImpl implements AdminUserRepository {
   @override
   Future<UserProfile> getMyProfile() {
     return _remoteDataSource.getMyProfile();
+  }
+
+  @override
+  Future<UserProfile> updateProfile({required String name}) {
+    return _remoteDataSource.updateProfile(name: name);
+  }
+
+  @override
+  Future<String> uploadProfileImage(File imageFile) {
+    return _remoteDataSource.uploadProfileImage(imageFile);
+  }
+
+  @override
+  Future<void> logout() {
+    return _remoteDataSource.logout();
   }
 }

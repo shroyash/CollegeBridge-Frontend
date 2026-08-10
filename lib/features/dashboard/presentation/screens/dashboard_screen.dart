@@ -8,7 +8,8 @@ import 'teacher_dashboard_screen.dart';
 /// Role-router screen.
 /// Reads the user role from secure storage and routes to the appropriate dashboard.
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key});
+  final VoidCallback? onLogout;
+  const DashboardScreen({super.key, this.onLogout});
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -49,11 +50,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final userName = _name ?? 'User';
 
     if (_role == 'ADMIN') {
-      return AdminDashboardScreen(userName: userName);
+      return AdminDashboardScreen(userName: userName, onLogout: widget.onLogout);
     } else if (_role == 'TEACHER') {
-      return TeacherDashboardScreen(userName: userName);
+      return TeacherDashboardScreen(userName: userName, onLogout: widget.onLogout);
     } else {
-      return StudentDashboardScreen(userName: userName);
+      return StudentDashboardScreen(userName: userName, onLogout: widget.onLogout);
     }
   }
 }

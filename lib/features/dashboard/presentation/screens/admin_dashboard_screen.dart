@@ -11,7 +11,8 @@ import '../../../admin_users/presentation/screens/manage_users_screen.dart';
 
 class AdminDashboardScreen extends ConsumerStatefulWidget {
   final String userName;
-  const AdminDashboardScreen({super.key, required this.userName});
+  final VoidCallback? onLogout;
+  const AdminDashboardScreen({super.key, required this.userName, this.onLogout});
 
   @override
   ConsumerState<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
@@ -224,6 +225,8 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                 builder: (context) => const ManageUsersScreen(),
               ),
             );
+          } else if (index == 3) {
+            _confirmLogout(context);
           }
         },
         items: const [
@@ -287,6 +290,39 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
           subtitle: 'Delivery', // static mock metric as per design
         ),
       ],
+    );
+  }
+
+  void _confirmLogout(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Logout',
+            style: TextStyle(fontWeight: FontWeight.bold)),
+        content: const Text('Are you sure you want to logout?'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await ref
+                  .read(profileNotifierProvider.notifier)
+                  .logoutAndClear();
+              if (widget.onLogout != null) {
+                widget.onLogout!();
+              }
+            },
+            style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFDC2626)),
+            child: const Text('Logout',
+                style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
     );
   }
 }

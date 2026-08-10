@@ -128,8 +128,9 @@ class _AppNavigatorState extends State<_AppNavigator> {
               _go(_Screen.login);
             },
           ),
-        _Screen.dashboard => const DashboardScreen(
-            key: ValueKey('dashboard'),
+        _Screen.dashboard => DashboardScreen(
+            key: const ValueKey('dashboard'),
+            onLogout: () => _go(_Screen.login),
           ),
       },
     );

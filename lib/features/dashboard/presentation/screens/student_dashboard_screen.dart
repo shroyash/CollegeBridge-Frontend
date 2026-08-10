@@ -9,7 +9,8 @@ import 'student_profile_screen.dart';
 
 class StudentDashboardScreen extends ConsumerStatefulWidget {
   final String userName;
-  const StudentDashboardScreen({super.key, required this.userName});
+  final VoidCallback? onLogout;
+  const StudentDashboardScreen({super.key, required this.userName, this.onLogout});
 
   @override
   ConsumerState<StudentDashboardScreen> createState() =>
@@ -181,7 +182,7 @@ class _StudentDashboardScreenState
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               const Text(
-                                'MY SUBJECTS',
+                                'MY CLASSES',
                                 style: TextStyle(
                                   color: Color(0xFF0F172A),
                                   fontSize: 16,
@@ -312,14 +313,200 @@ class _StudentDashboardScreenState
                 ),
               ],
             ),
-            // 1 – Subjects (placeholder)
-            const Center(child: Text('Subjects')),
+            // 1 – Subjects
+            Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF2563EB),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'My Classes',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'All enrolled courses',
+                            style: TextStyle(
+                              color: Color(0xFFBFDBFE),
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.book_outlined,
+                            color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: RefreshIndicator(
+                    onRefresh: () => ref
+                        .read(studentDashboardNotifierProvider.notifier)
+                        .fetchMySubjects(),
+                    child: state is DashboardLoading
+                        ? const Center(child: CircularProgressIndicator())
+                        : state is DashboardFailure<List<Subject>>
+                            ? Center(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.error_outline,
+                                        color: Color(0xFFDC2626), size: 40),
+                                    const SizedBox(height: 12),
+                                    Text(state.message,
+                                        style: const TextStyle(
+                                            color: Color(0xFF64748B))),
+                                    const SizedBox(height: 16),
+                                    ElevatedButton(
+                                      onPressed: () => ref
+                                          .read(studentDashboardNotifierProvider
+                                              .notifier)
+                                          .fetchMySubjects(),
+                                      child: const Text('Retry'),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : state is DashboardSuccess<List<Subject>>
+                                ? state.data.isEmpty
+                                    ? const Center(
+                                        child: Text('No Classes enrolled.',
+                                            style: TextStyle(
+                                                color: Color(0xFF64748B))))
+                                    : ListView.separated(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 20, vertical: 16),
+                                        physics:
+                                            const AlwaysScrollableScrollPhysics(),
+                                        itemCount: state.data.length,
+                                        separatorBuilder: (_, __) =>
+                                            const SizedBox(height: 12),
+                                        itemBuilder: (context, index) {
+                                          final subject = state.data[index];
+                                          return Container(
+                                            padding: const EdgeInsets.all(16),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white,
+                                              borderRadius:
+                                                  BorderRadius.circular(14),
+                                              border: Border.all(
+                                                  color:
+                                                      const Color(0xFFE2E8F0)),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Colors.black
+                                                      .withValues(alpha: 0.02),
+                                                  blurRadius: 8,
+                                                  offset: const Offset(0, 2),
+                                                ),
+                                              ],
+                                            ),
+                                            child: Row(
+                                              children: [
+                                                Container(
+                                                  padding:
+                                                      const EdgeInsets.all(10),
+                                                  decoration: BoxDecoration(
+                                                    color: const Color(
+                                                        0xFFEFF6FF),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            10),
+                                                  ),
+                                                  child: Icon(
+                                                      _getSubjectIcon(
+                                                          subject.name),
+                                                      color: const Color(
+                                                          0xFF2563EB),
+                                                      size: 22),
+                                                ),
+                                                const SizedBox(width: 14),
+                                                Expanded(
+                                                  child: Column(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
+                                                    children: [
+                                                      Text(
+                                                        subject.name,
+                                                        style: const TextStyle(
+                                                          fontSize: 15,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          color: Color(
+                                                              0xFF0F172A),
+                                                        ),
+                                                      ),
+                                                      const SizedBox(height: 4),
+                                                      Text(
+                                                        'Faculty: ${subject.faculty}',
+                                                        style: const TextStyle(
+                                                          fontSize: 12,
+                                                          color:
+                                                              Color(0xFF64748B),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                                Container(
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                          horizontal: 10,
+                                                          vertical: 4),
+                                                  decoration: BoxDecoration(
+                                                    color: const Color(
+                                                        0xFFEFF6FF),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            8),
+                                                  ),
+                                                  child: Text(
+                                                    '${subject.creditHours} Cr',
+                                                    style: const TextStyle(
+                                                      fontSize: 12,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      color: Color(0xFF2563EB),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                        },
+                                      )
+                                : const SizedBox.shrink(),
+                  ),
+                ),
+              ],
+            ),
             // 2 – Alerts (placeholder)
             const Center(child: Text('Alerts')),
             // 3 – Doubts (placeholder)
             const Center(child: Text('Doubts')),
             // 4 – Profile
-            const StudentProfileScreen(),
+            StudentProfileScreen(onLogout: widget.onLogout),
+
           ],
         ),
       ),
@@ -334,7 +521,7 @@ class _StudentDashboardScreenState
           BottomNavigationBarItem(
               icon: Icon(Icons.home_filled), label: 'Home'),
           BottomNavigationBarItem(
-              icon: Icon(Icons.book_outlined), label: 'Subjects'),
+              icon: Icon(Icons.book_outlined), label: 'Classes'),
           BottomNavigationBarItem(
               icon: Icon(Icons.notifications_none), label: 'Alerts'),
           BottomNavigationBarItem(

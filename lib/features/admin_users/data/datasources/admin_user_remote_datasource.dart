@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'dart:io';
 
 import '../../../../app/constants/api_constants.dart';
 import '../../../../core/network/api_client.dart';
@@ -259,6 +260,64 @@ class AdminUserRemoteDataSource {
 
       final data = response.data!['data'] as Map<String, dynamic>;
       return UserProfileModel.fromJson(data);
+    } on DioException catch (e) {
+      throw _mapDioException(e);
+    }
+  }
+
+  /// PUT /api/account/profile
+  Future<UserProfileModel> updateProfile({required String name}) async {
+    try {
+      final options = await _authOptions();
+      final response = await _apiClient.dio.put<Map<String, dynamic>>(
+        '/api/account/profile',
+        data: {'name': name},
+        options: options,
+      );
+
+      final data = response.data!['data'] as Map<String, dynamic>;
+      return UserProfileModel.fromJson(data);
+    } on DioException catch (e) {
+      throw _mapDioException(e);
+    }
+  }
+
+  /// POST /api/account/profile/image
+  Future<String> uploadProfileImage(File imageFile) async {
+    try {
+      final token = await _storage.getAccessToken();
+      final formData = FormData.fromMap({
+        'file': await MultipartFile.fromFile(
+          imageFile.path,
+          filename: imageFile.path.split('/').last,
+        ),
+      });
+      final response = await _apiClient.dio.post<Map<String, dynamic>>(
+        '/api/account/profile/image',
+        data: formData,
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+      return response.data!['data'] as String;
+    } on DioException catch (e) {
+      throw _mapDioException(e);
+    }
+  }
+
+  /// POST /api/auth/logout
+  Future<void> logout() async {
+    try {
+      final refreshToken = await _storage.getRefreshToken();
+      final token = await _storage.getAccessToken();
+
+      if (refreshToken == null || refreshToken.trim().isEmpty) {
+        return;
+      }
+
+      await _apiClient.dio.post<dynamic>(
+        ApiConstants.logout,
+        data: {'refreshToken': refreshToken},
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
     } on DioException catch (e) {
       throw _mapDioException(e);
     }

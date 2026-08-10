@@ -17,14 +17,12 @@ import 'manage_users_notifier.dart';
 import 'manage_users_state.dart';
 
 final _apiClientProvider = Provider<ApiClient>((ref) => ApiClient());
-final _secureStorageProvider =
-    Provider<SecureStorageService>((ref) => SecureStorageService());
 
 final adminUserRemoteDataSourceProvider =
     Provider<AdminUserRemoteDataSource>((ref) {
   return AdminUserRemoteDataSource(
     ref.watch(_apiClientProvider),
-    ref.watch(_secureStorageProvider),
+    ref.watch(secureStorageProvider),
   );
 });
 

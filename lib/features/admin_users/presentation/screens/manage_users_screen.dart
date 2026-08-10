@@ -612,65 +612,33 @@ class _ManageUsersScreenState extends ConsumerState<ManageUsersScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    showDialog(
-                      context: context,
-                      builder: (ctx) => StudentDetailsDialog(student: user),
-                    );
-                  },
-                  icon: const Icon(Icons.person_outline,
-                      size: 16, color: Color(0xFF334155)),
-                  label: const Text(
-                    'View Profile',
-                    style: TextStyle(
-                      color: Color(0xFF334155),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    side: const BorderSide(color: Color(0xFFCBD5E1)),
-                  ),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (ctx) => StudentDetailsDialog(student: user),
+                );
+              },
+              icon: const Icon(Icons.person_outline,
+                  size: 16, color: Color(0xFF334155)),
+              label: const Text(
+                'View Profile',
+                style: TextStyle(
+                  color: Color(0xFF334155),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    showDialog(
-                      context: context,
-                      builder: (ctx) => StudentDetailsDialog(student: user),
-                    );
-                  },
-                  icon: const Icon(Icons.school_outlined,
-                      size: 16, color: Colors.white),
-                  label: const Text(
-                    'View Classes',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2563EB),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
                 ),
+                side: const BorderSide(color: Color(0xFFCBD5E1)),
               ),
-            ],
+            ),
           ),
           const SizedBox(height: 8),
           SizedBox(
