@@ -9,6 +9,7 @@ class RegisterUseCase {
   const RegisterUseCase(this._repository);
 
   Future<AuthUser> call({
+    required String institutionCode,
     required String name,
     required String email,
     required String password,
@@ -16,6 +17,7 @@ class RegisterUseCase {
     required int semester,
   }) {
     return _repository.register(
+      institutionCode: institutionCode,
       name: name,
       email: email,
       password: password,

@@ -12,15 +12,21 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<AuthUser> login({
+    required String institutionCode,
     required String email,
     required String password,
   }) async {
-    final model = await _remoteDataSource.login(email: email, password: password);
-    return model; // AuthUserModel extends AuthUser — already a domain entity
+    final model = await _remoteDataSource.login(
+      institutionCode: institutionCode,
+      email: email,
+      password: password,
+    );
+    return model;
   }
 
   @override
   Future<AuthUser> register({
+    required String institutionCode,
     required String name,
     required String email,
     required String password,
@@ -28,6 +34,7 @@ class AuthRepositoryImpl implements AuthRepository {
     required int semester,
   }) async {
     final model = await _remoteDataSource.register(
+      institutionCode: institutionCode,
       name: name,
       email: email,
       password: password,
@@ -65,4 +72,3 @@ class AuthRepositoryImpl implements AuthRepository {
     );
   }
 }
-

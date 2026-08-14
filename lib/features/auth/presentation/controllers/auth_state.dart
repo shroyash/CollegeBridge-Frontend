@@ -1,4 +1,6 @@
 import 'package:equatable/equatable.dart';
+
+import '../../../../core/error/auth_exceptions.dart';
 import '../../domain/entities/auth_user.dart';
 
 /// Sealed state class for the Auth feature.
@@ -28,7 +30,24 @@ final class AuthSuccess extends AuthState {
   List<Object?> get props => [user];
 }
 
-/// Failure state — an error occurred.
+/// Typed login failure with distinct reason codes.
+/// This lets the UI render a specific message/action per backend reason.
+final class AuthLoginFailure extends AuthState {
+  final LoginFailureReason reason;
+  final String message;
+  final String? rejectionReason; // only present for institutionRejected
+
+  const AuthLoginFailure({
+    required this.reason,
+    required this.message,
+    this.rejectionReason,
+  });
+
+  @override
+  List<Object?> get props => [reason, message, rejectionReason];
+}
+
+/// Generic failure state — for non-login errors (register, forgot-password, etc.)
 final class AuthFailure extends AuthState {
   final String message;
   const AuthFailure(this.message);

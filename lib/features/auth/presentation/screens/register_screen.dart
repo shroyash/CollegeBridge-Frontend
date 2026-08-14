@@ -10,7 +10,7 @@ import '../widgets/auth_text_field.dart';
 
 /// Register Screen — matches the design:
 /// • "Create Student Account" heading + subtitle
-/// • Full Name, Email, Password fields
+/// • Institution Code, Full Name, Email, Password fields
 /// • Department dropdown (Faculty enum)
 /// • Semester chip grid (1st–8th)
 /// • "Institutional Onboarding" info card
@@ -34,6 +34,7 @@ class RegisterScreen extends ConsumerStatefulWidget {
 
 class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _institutionCodeController = TextEditingController();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -49,6 +50,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   @override
   void dispose() {
+    _institutionCodeController.dispose();
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
@@ -67,6 +69,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     }
 
     ref.read(authNotifierProvider.notifier).register(
+          institutionCode: _institutionCodeController.text.trim().toUpperCase(),
           name: _nameController.text.trim(),
           email: _emailController.text.trim(),
           password: _passwordController.text,
@@ -152,6 +155,25 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 ),
 
                 const SizedBox(height: 28),
+
+                // ── Institution Code ──
+                AuthTextField(
+                  label: 'Institution Code',
+                  hint: 'e.g. TU-KTM',
+                  controller: _institutionCodeController,
+                  textCapitalization: TextCapitalization.characters,
+                  suffixIcon: const Icon(
+                    Icons.business_outlined,
+                    color: Color(0xFFB0BAC8),
+                    size: 20,
+                  ),
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) return 'Institution code is required';
+                    return null;
+                  },
+                ),
+
+                const SizedBox(height: 18),
 
                 // ── Full Name ──
                 AuthTextField(
@@ -298,7 +320,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'FACULTY / PROGRAM',
+                      'SEMESTER',
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
@@ -360,10 +382,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 const SizedBox(height: 22),
 
                 // ── Institutional Onboarding card ──
-                AuthInfoCard(
+                const AuthInfoCard(
                   icon: Icons.verified_user_outlined,
-                  iconColor: const Color(0xFF2563EB),
-                  iconBgColor: const Color(0xFFDBEAFE),
+                  iconColor: Color(0xFF2563EB),
+                  iconBgColor: Color(0xFFDBEAFE),
                   title: 'Institutional Onboarding',
                   description:
                       'By registering, you\'ll gain access to the secure College Bridge portal for automated course tracking and collaborative tools.',

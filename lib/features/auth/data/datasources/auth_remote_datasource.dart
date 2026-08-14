@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../../../../app/constants/api_constants.dart';
+import '../../../../core/error/auth_exceptions.dart';
 import '../../../../core/network/api_client.dart';
 import '../../domain/entities/faculty.dart';
 import '../models/auth_user_model.dart';
@@ -13,25 +14,32 @@ class AuthRemoteDataSource {
   const AuthRemoteDataSource(this._apiClient);
 
   /// POST /api/auth/login
+  /// Now accepts [institutionCode] in addition to email/password.
+  /// Maps backend 403 reason codes to [LoginFailureException].
   Future<AuthUserModel> login({
+    required String institutionCode,
     required String email,
     required String password,
   }) async {
     try {
       final response = await _apiClient.post<Map<String, dynamic>>(
         ApiConstants.login,
-        data: {'email': email, 'password': password},
+        data: {
+          'institutionCode': institutionCode,
+          'email': email,
+          'password': password,
+        },
       );
-      // Backend wraps payload in ApiResponse: { success, message, data }
       final data = response.data!['data'] as Map<String, dynamic>;
       return AuthUserModel.fromJson(data);
     } on DioException catch (e) {
-      throw _mapDioException(e);
+      throw _mapLoginDioException(e);
     }
   }
 
-  /// POST /api/auth/register
+  /// POST /api/auth/register  (existing student self-registration)
   Future<AuthUserModel> register({
+    required String institutionCode,
     required String name,
     required String email,
     required String password,
@@ -42,6 +50,7 @@ class AuthRemoteDataSource {
       final response = await _apiClient.post<Map<String, dynamic>>(
         ApiConstants.register,
         data: {
+          'institutionCode': institutionCode,
           'name': name,
           'email': email,
           'password': password,
@@ -81,8 +90,6 @@ class AuthRemoteDataSource {
   }
 
   /// POST /api/auth/verify-otp
-  /// Sends { email, code, type: "PASSWORD_RESET" }
-  /// Returns a [verificationToken] used for the reset-password step.
   Future<String> verifyOtp({
     required String email,
     required String code,
@@ -104,7 +111,6 @@ class AuthRemoteDataSource {
   }
 
   /// POST /api/auth/reset-password
-  /// Sends { email, verificationToken, newPassword }
   Future<void> resetPassword({
     required String email,
     required String verificationToken,
@@ -124,6 +130,59 @@ class AuthRemoteDataSource {
     }
   }
 
+  // ── Exception Mappers ────────────────────────────────────────────────────
+
+  /// Special mapper for login that decodes backend reason codes.
+  /// Backend sends 403 with errorCode field for institution/user status issues.
+  Exception _mapLoginDioException(DioException e) {
+    final statusCode = e.response?.statusCode;
+    final data = e.response?.data;
+
+    if (statusCode == 403 && data is Map<String, dynamic>) {
+      final errorCode = data['errorCode'] as String? ?? '';
+      final message = data['message'] as String? ?? 'Access denied.';
+      final rejectionReason = data['rejectionReason'] as String?;
+
+      return switch (errorCode) {
+        'INSTITUTION_PENDING' => LoginFailureException(
+            reason: LoginFailureReason.institutionPending,
+            message: message,
+          ),
+        'INSTITUTION_REJECTED' => LoginFailureException(
+            reason: LoginFailureReason.institutionRejected,
+            message: message,
+            rejectionReason: rejectionReason,
+          ),
+        'INSTITUTION_SUSPENDED' => LoginFailureException(
+            reason: LoginFailureReason.institutionSuspended,
+            message: message,
+          ),
+        'USER_SUSPENDED' => LoginFailureException(
+            reason: LoginFailureReason.userSuspended,
+            message: message,
+          ),
+        'USER_INACTIVE' => LoginFailureException(
+            reason: LoginFailureReason.userInactive,
+            message: message,
+          ),
+        _ => LoginFailureException(
+            reason: LoginFailureReason.unknown,
+            message: message,
+          ),
+      };
+    }
+
+    if (statusCode == 401) {
+      return LoginFailureException(
+        reason: LoginFailureReason.invalidCredentials,
+        message: _extractMessage(e).isNotEmpty
+            ? _extractMessage(e)
+            : 'Invalid email or password.',
+      );
+    }
+
+    return _mapDioException(e);
+  }
 
   Exception _mapDioException(DioException e) {
     final statusCode = e.response?.statusCode;

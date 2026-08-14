@@ -14,6 +14,13 @@ static const String baseUrl = 'http://localhost:8080';
   static const String verifyOtp = '/api/auth/verify-otp';
   static const String resetPassword = '/api/auth/reset-password';
 
+  // Institution Registration (public)
+  static const String institutionRegister = '/api/institutions/register';
+
+  // Super Admin — Institution Management
+  static const String superAdminInstitutionsPending = '/api/super-admin/institutions/pending';
+  static const String superAdminInstitutions = '/api/super-admin/institutions';
+
   // Dashboard
   static const String adminDashboard = '/api/admin/dashboard';
 

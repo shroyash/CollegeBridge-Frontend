@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/error/auth_exceptions.dart';
 import '../../../../core/storage/secure_storage_service.dart';
 import '../../domain/entities/faculty.dart';
 import '../../domain/usecases/login_usecase.dart';
@@ -23,12 +24,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
         super(const AuthInitial());
 
   Future<void> login({
+    required String institutionCode,
     required String email,
     required String password,
   }) async {
     state = const AuthLoading();
     try {
-      final user = await _loginUseCase(email: email, password: password);
+      final user = await _loginUseCase(
+        institutionCode: institutionCode,
+        email: email,
+        password: password,
+      );
       await _storageService.saveTokens(
         accessToken: user.accessToken,
         refreshToken: user.refreshToken,
@@ -37,12 +43,20 @@ class AuthNotifier extends StateNotifier<AuthState> {
       await _storageService.saveUserName(user.name);
       await _storageService.saveUserRole(user.role);
       state = AuthSuccess(user);
+    } on LoginFailureException catch (e) {
+      // Typed reason-code failures from the backend
+      state = AuthLoginFailure(
+        reason: e.reason,
+        message: e.message,
+        rejectionReason: e.rejectionReason,
+      );
     } catch (e) {
       state = AuthFailure(e.toString().replaceFirst('Exception: ', ''));
     }
   }
 
   Future<void> register({
+    required String institutionCode,
     required String name,
     required String email,
     required String password,
@@ -52,6 +66,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = const AuthLoading();
     try {
       final user = await _registerUseCase(
+        institutionCode: institutionCode,
         name: name,
         email: email,
         password: password,
@@ -69,6 +84,18 @@ class AuthNotifier extends StateNotifier<AuthState> {
     } catch (e) {
       state = AuthFailure(e.toString().replaceFirst('Exception: ', ''));
     }
+  }
+
+  Future<void> logout() async {
+    final refreshToken = await _storageService.getRefreshToken();
+    if (refreshToken != null) {
+      // best-effort logout (ignore errors)
+      try {
+        // We don't have the logout use case here; storage clear is enough for UI
+      } catch (_) {}
+    }
+    await _storageService.clearAll();
+    state = const AuthInitial();
   }
 
   void reset() => state = const AuthInitial();

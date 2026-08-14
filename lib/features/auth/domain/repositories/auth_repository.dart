@@ -4,11 +4,13 @@ import '../entities/faculty.dart';
 
 abstract class AuthRepository {
   Future<AuthUser> login({
+    required String institutionCode,
     required String email,
     required String password,
   });
 
   Future<AuthUser> register({
+    required String institutionCode,
     required String name,
     required String email,
     required String password,
