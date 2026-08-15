@@ -15,11 +15,23 @@ static const String baseUrl = 'http://localhost:8080';
   static const String resetPassword = '/api/auth/reset-password';
 
   // Institution Registration (public)
-  static const String institutionRegister = '/api/institutions/register';
+  static const String institutionRegister = '/api/auth/register-institution';
 
-  // Super Admin — Institution Management
+  // Super Admin — Dashboard Metrics
+  static const String superAdminDashboardInstTotal = '/api/super-admin/dashboard/institutions/total';
+  static const String superAdminDashboardInstPending = '/api/super-admin/dashboard/institutions/pending';
+  static const String superAdminDashboardInstActive = '/api/super-admin/dashboard/institutions/active';
+  static const String superAdminDashboardInstSuspended = '/api/super-admin/dashboard/institutions/suspended';
+  static const String superAdminDashboardUsersTotal = '/api/super-admin/dashboard/users/total';
+  static const String superAdminDashboardUsersStudents = '/api/super-admin/dashboard/users/students';
+  static const String superAdminDashboardUsersTeachers = '/api/super-admin/dashboard/users/teachers';
+  static const String superAdminDashboardUsersAdmins = '/api/super-admin/dashboard/users/admins';
+
+  // Super Admin — Institution & User Management
   static const String superAdminInstitutionsPending = '/api/super-admin/institutions/pending';
   static const String superAdminInstitutions = '/api/super-admin/institutions';
+  static const String superAdminUsers = '/api/super-admin/users';
+  static const String superAdminAdmins = '/api/super-admin/admins';
 
   // Dashboard
   static const String adminDashboard = '/api/admin/dashboard';

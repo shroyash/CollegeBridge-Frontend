@@ -11,9 +11,12 @@ import 'features/auth/presentation/screens/otp_verification_screen.dart';
 import 'features/auth/presentation/screens/register_screen.dart';
 import 'features/auth/presentation/screens/splash_screen.dart';
 import 'features/dashboard/presentation/screens/dashboard_screen.dart';
+import 'features/institution_admin/domain/entities/institution_entities.dart';
 import 'features/institution_admin/presentation/screens/institution_registration_screen.dart';
 import 'features/institution_admin/presentation/screens/managed_institutions_screen.dart';
 import 'features/institution_admin/presentation/screens/pending_institutions_screen.dart';
+import 'features/institution_admin/presentation/screens/registration_submitted_screen.dart';
+import 'features/super_admin/presentation/screens/super_admin_shell.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -57,6 +60,9 @@ class _AppNavigatorState extends State<_AppNavigator> {
   // Forgot-password flow state
   String _fpEmail = '';
   String _fpVerificationToken = '';
+
+  // Registration submitted result
+  InstitutionRegistrationResult? _registrationResult;
 
   // Role of the logged-in user (for routing to correct dashboard)
   String _userRole = '';
@@ -146,10 +152,20 @@ class _AppNavigatorState extends State<_AppNavigator> {
         _Screen.institutionRegister => InstitutionRegistrationScreen(
             key: const ValueKey('institutionRegister'),
             onBack: () => _go(_Screen.login),
+            onSuccess: (result) {
+              setState(() {
+                _registrationResult = result;
+                _current = _Screen.registrationSubmitted;
+              });
+            },
           ),
-        _Screen.superAdminDashboard => _SuperAdminHome(
-            key: const ValueKey('superAdminDashboard'),
-            onLogout: () => _go(_Screen.login),
+        _Screen.registrationSubmitted => RegistrationSubmittedScreen(
+            key: const ValueKey('registrationSubmitted'),
+            result: _registrationResult!,
+            onGoToLogin: () => _go(_Screen.login),
+          ),
+        _Screen.superAdminDashboard => const SuperAdminShell(
+            key: ValueKey('superAdminDashboard'),
           ),
       },
     );
@@ -165,6 +181,7 @@ enum _Screen {
   newPassword,
   dashboard,
   institutionRegister,
+  registrationSubmitted,
   superAdminDashboard,
 }
 

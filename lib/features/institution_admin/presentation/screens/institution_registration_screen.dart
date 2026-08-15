@@ -1,19 +1,24 @@
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../domain/entities/institution_entities.dart';
 import '../controllers/institution_providers.dart';
 import '../controllers/institution_state.dart';
 import 'registration_submitted_screen.dart';
 
-
-
 class InstitutionRegistrationScreen extends ConsumerStatefulWidget {
   final VoidCallback onBack;
+  final void Function(InstitutionRegistrationResult)? onSuccess;
 
-  const InstitutionRegistrationScreen({super.key, required this.onBack});
+  const InstitutionRegistrationScreen({
+    super.key,
+    required this.onBack,
+    this.onSuccess,
+  });
 
   @override
   ConsumerState<InstitutionRegistrationScreen> createState() =>
@@ -85,6 +90,7 @@ class _InstitutionRegistrationScreenState
       allowMultiple: true,
       type: FileType.custom,
       allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
+      withData: true,
     );
     if (result != null) {
       setState(() {
@@ -105,22 +111,36 @@ class _InstitutionRegistrationScreenState
       return;
     }
 
-    final docs = _pickedFiles.map((f) {
-      final file = MultipartFile.fromFileSync(
-        f.path!,
-        filename: f.name,
-      );
-      return MapEntry(f.name, file);
-    }).toList();
+    try {
+      final List<MapEntry<String, MultipartFile>> docs = [];
+      for (final f in _pickedFiles) {
+        if (f.bytes != null) {
+          docs.add(MapEntry(
+            f.name,
+            MultipartFile.fromBytes(f.bytes!, filename: f.name),
+          ));
+        } else if (!kIsWeb && f.path != null && f.path!.isNotEmpty) {
+          docs.add(MapEntry(
+            f.name,
+            MultipartFile.fromFileSync(f.path!, filename: f.name),
+          ));
+        } else {
+          _showError('Unable to read file ${f.name}. Please re-select the file.');
+          return;
+        }
+      }
 
-    await ref.read(institutionRegistrationProvider.notifier).register(
-          institutionName: _institutionNameCtrl.text.trim(),
-          institutionCode: _institutionCodeCtrl.text.trim().toUpperCase(),
-          adminName: _adminNameCtrl.text.trim(),
-          adminEmail: _adminEmailCtrl.text.trim(),
-          adminPassword: _adminPasswordCtrl.text,
-          documents: docs,
-        );
+      await ref.read(institutionRegistrationProvider.notifier).register(
+            institutionName: _institutionNameCtrl.text.trim(),
+            institutionCode: _institutionCodeCtrl.text.trim().toUpperCase(),
+            adminName: _adminNameCtrl.text.trim(),
+            adminEmail: _adminEmailCtrl.text.trim(),
+            adminPassword: _adminPasswordCtrl.text,
+            documents: docs,
+          );
+    } catch (e) {
+      _showError('Failed to prepare documents: ${e.toString()}');
+    }
   }
 
   void _showError(String msg) {
@@ -137,14 +157,18 @@ class _InstitutionRegistrationScreenState
     ref.listen<InstitutionRegistrationState>(institutionRegistrationProvider,
         (_, next) {
       if (next is RegistrationSuccess) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (_) => RegistrationSubmittedScreen(
-              result: next.result,
-              onGoToLogin: widget.onBack,
+        if (widget.onSuccess != null) {
+          widget.onSuccess!(next.result);
+        } else {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => RegistrationSubmittedScreen(
+                result: next.result,
+                onGoToLogin: widget.onBack,
+              ),
             ),
-          ),
-        );
+          );
+        }
       } else if (next is RegistrationFailure) {
         _showError(next.message);
         ref.read(institutionRegistrationProvider.notifier).reset();

@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:dio/dio.dart';
+import 'package:http_parser/http_parser.dart';
 
 import '../../../../app/constants/api_constants.dart';
 import '../../../../core/network/api_client.dart';
@@ -12,7 +14,7 @@ class InstitutionAdminRemoteDataSource {
 
   // ── Public: Institution Registration ──────────────────────────────────────
 
-  /// POST /api/institutions/register  (multipart)
+  /// POST /api/auth/register-institution (multipart)
   Future<InstitutionRegistrationResultModel> registerInstitution({
     required String institutionName,
     required String institutionCode,
@@ -21,20 +23,33 @@ class InstitutionAdminRemoteDataSource {
     required String adminPassword,
     required List<MapEntry<String, MultipartFile>> documents, // filename → file
   }) async {
-    final formData = FormData.fromMap({
+    final requestJson = jsonEncode({
       'name': institutionName,
       'code': institutionCode,
       'adminName': adminName,
       'adminEmail': adminEmail,
       'adminPassword': adminPassword,
-      'documents': documents.map((e) => e.value).toList(),
     });
+
+    final formData = FormData();
+    formData.files.add(
+      MapEntry(
+        'request',
+        MultipartFile.fromString(
+          requestJson,
+          contentType: MediaType('application', 'json'),
+        ),
+      ),
+    );
+
+    for (final doc in documents) {
+      formData.files.add(MapEntry('documents', doc.value));
+    }
 
     try {
       final response = await _apiClient.post<Map<String, dynamic>>(
         ApiConstants.institutionRegister,
         data: formData,
-        options: Options(contentType: 'multipart/form-data'),
       );
       final data = response.data!['data'] as Map<String, dynamic>;
       return InstitutionRegistrationResultModel.fromJson(data);
