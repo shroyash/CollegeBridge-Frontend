@@ -13,11 +13,11 @@ class SubjectModel extends Subject {
 
   factory SubjectModel.fromJson(Map<String, dynamic> json) {
     return SubjectModel(
-      subjectId: (json['subjectId'] as num).toInt(),
-      name: json['name'] as String,
-      faculty: json['faculty'] as String,
-      semester: (json['semester'] as num).toInt(),
-      creditHours: (json['creditHours'] as num).toInt(),
+      subjectId: (json['subjectId'] as num?)?.toInt() ?? 0,
+      name: json['name'] as String? ?? '',
+      faculty: json['faculty'] as String? ?? '',
+      semester: (json['semester'] as num?)?.toInt() ?? 1,
+      creditHours: (json['creditHours'] as num?)?.toInt() ?? 3,
     );
   }
 }

@@ -109,7 +109,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
               const SizedBox(height: 28),
               Text(
-                'Welcome Back 👋',
+                'Welcome Back',
                 style: GoogleFonts.inter(
                   fontSize: 26,
                   fontWeight: FontWeight.w800,

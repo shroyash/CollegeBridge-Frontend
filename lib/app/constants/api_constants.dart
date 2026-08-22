@@ -48,4 +48,11 @@ static const String baseUrl = 'http://localhost:8080';
   static const String academicSubjectsAll = '/api/academic/subjects/all';
   static const String academicSubjectsSearch = '/api/academic/subjects/search';
   static const String academicStudentSubjects = '/api/academic/subjects/student';
+
+  // Admin Academic Management
+  static const String adminAcademicFaculties = '/api/admin/academic/faculties';
+  static const String adminAcademicClasses = '/api/admin/academic/classes';
+  static const String adminAcademicSubjects = '/api/admin/academic/subjects';
+  static const String adminAcademicSubjectsBatch = '/api/admin/academic/subjects/batch';
 }
+

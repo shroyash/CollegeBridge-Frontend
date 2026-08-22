@@ -8,6 +8,7 @@ import '../widgets/metric_card.dart';
 import '../widgets/quick_action_tile.dart';
 
 import '../../../admin_users/presentation/screens/manage_users_screen.dart';
+import '../../../institution_admin/presentation/screens/academic_management_screen.dart';
 
 class AdminDashboardScreen extends ConsumerStatefulWidget {
   final String userName;
@@ -157,12 +158,20 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                                       },
                                     ),
                                     QuickActionTile(
-                                      title: 'Manage Classes',
-                                      icon: Icons.class_outlined,
+                                      title: 'Academic & Subjects',
+                                      icon: Icons.school_outlined,
                                       iconColor: const Color(0xFF9333EA),
                                       iconBackgroundColor: const Color(0xFFF3E8FF),
-                                      onTap: () {},
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => const AcademicManagementScreen(),
+                                          ),
+                                        );
+                                      },
                                     ),
+
                                     
                                     const SizedBox(height: 24),
                                     
