@@ -5,6 +5,7 @@ import '../../../../core/network/api_client.dart';
 import '../../../../core/storage/secure_storage_service.dart';
 import '../../../dashboard/data/models/subject_model.dart';
 import '../models/academic_class_model.dart';
+import '../models/class_detail_model.dart';
 
 class AcademicAdminRemoteDataSource {
   final ApiClient _apiClient;
@@ -269,6 +270,125 @@ class AcademicAdminRemoteDataSource {
         '${ApiConstants.adminAcademicSubjects}/$subjectId',
         options: options,
       );
+    } on DioException catch (e) {
+      throw _mapDioException(e);
+    }
+  }
+
+  /// GET /api/admin/academic/classes filtered
+  Future<List<AcademicClassModel>> getAcademicClassesFiltered({
+    String? faculty,
+    int? semester,
+    String? search,
+  }) async {
+    try {
+      final options = await _authOptions();
+      final queryParams = <String, dynamic>{};
+      if (faculty != null && faculty.isNotEmpty && faculty != 'ALL') {
+        queryParams['faculty'] = faculty;
+      }
+      if (semester != null) {
+        queryParams['semester'] = semester;
+      }
+      if (search != null && search.trim().isNotEmpty) {
+        queryParams['search'] = search.trim();
+      }
+
+      final response = await _apiClient.get<Map<String, dynamic>>(
+        ApiConstants.adminAcademicClasses,
+        queryParameters: queryParams,
+        options: options,
+      );
+
+      final data = response.data?['data'];
+      if (data is List) {
+        return data
+            .map((e) => AcademicClassModel.fromJson(e as Map<String, dynamic>))
+            .toList();
+      }
+      return [];
+    } on DioException catch (e) {
+      throw _mapDioException(e);
+    }
+  }
+
+  /// GET /api/admin/academic/classes/{classId}/details
+  Future<ClassDetailModel> getClassDetails(int classId) async {
+    try {
+      final options = await _authOptions();
+      final response = await _apiClient.get<Map<String, dynamic>>(
+        '${ApiConstants.adminAcademicClasses}/$classId/details',
+        options: options,
+      );
+
+      final data = response.data?['data'] as Map<String, dynamic>? ?? {};
+      return ClassDetailModel.fromJson(data);
+    } on DioException catch (e) {
+      throw _mapDioException(e);
+    }
+  }
+
+  /// POST /api/admin/academic/classes/{classId}/students/{studentId}
+  Future<ClassStudentModel> addStudentToClass(int classId, int studentId) async {
+    try {
+      final options = await _authOptions();
+      final response = await _apiClient.post<Map<String, dynamic>>(
+        '${ApiConstants.adminAcademicClasses}/$classId/students/$studentId',
+        options: options,
+      );
+
+      final data = response.data?['data'] as Map<String, dynamic>? ?? {};
+      return ClassStudentModel.fromJson(data);
+    } on DioException catch (e) {
+      throw _mapDioException(e);
+    }
+  }
+
+  /// DELETE /api/admin/academic/classes/{classId}/students/{studentId}
+  Future<void> removeStudentFromClass(int classId, int studentId) async {
+    try {
+      final options = await _authOptions();
+      await _apiClient.dio.delete<dynamic>(
+        '${ApiConstants.adminAcademicClasses}/$classId/students/$studentId',
+        options: options,
+      );
+    } on DioException catch (e) {
+      throw _mapDioException(e);
+    }
+  }
+
+  /// PUT /api/admin/academic/classes/{classId}/class-teacher/{teacherId}
+  Future<AcademicClassModel> assignClassTeacher(int classId, int teacherId) async {
+    try {
+      final options = await _authOptions();
+      final response = await _apiClient.dio.put<Map<String, dynamic>>(
+        '${ApiConstants.adminAcademicClasses}/$classId/class-teacher/$teacherId',
+        options: options,
+      );
+
+      final data = response.data?['data'] as Map<String, dynamic>? ?? {};
+      return AcademicClassModel.fromJson(data);
+    } on DioException catch (e) {
+      throw _mapDioException(e);
+    }
+  }
+
+  /// GET /api/admin/academic/unassigned-students
+  Future<List<ClassStudentModel>> getUnassignedStudents() async {
+    try {
+      final options = await _authOptions();
+      final response = await _apiClient.get<Map<String, dynamic>>(
+        '${ApiConstants.adminAcademicClasses.replaceAll('/classes', '')}/unassigned-students',
+        options: options,
+      );
+
+      final data = response.data?['data'];
+      if (data is List) {
+        return data
+            .map((e) => ClassStudentModel.fromJson(e as Map<String, dynamic>))
+            .toList();
+      }
+      return [];
     } on DioException catch (e) {
       throw _mapDioException(e);
     }

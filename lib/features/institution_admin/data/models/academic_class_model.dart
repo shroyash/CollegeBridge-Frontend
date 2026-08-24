@@ -6,6 +6,9 @@ class AcademicClassModel extends AcademicClass {
     required super.faculty,
     required super.semester,
     required super.displayName,
+    super.totalStudents = 0,
+    super.classTeacherId,
+    super.classTeacherName,
   });
 
   factory AcademicClassModel.fromJson(Map<String, dynamic> json) {
@@ -17,6 +20,9 @@ class AcademicClassModel extends AcademicClass {
       faculty: facultyStr,
       semester: semInt,
       displayName: json['displayName'] as String? ?? '$facultyStr Sem $semInt',
+      totalStudents: (json['totalStudents'] as num?)?.toInt() ?? 0,
+      classTeacherId: (json['classTeacherId'] as num?)?.toInt(),
+      classTeacherName: json['classTeacherName'] as String?,
     );
   }
 
@@ -26,6 +32,9 @@ class AcademicClassModel extends AcademicClass {
       'faculty': faculty,
       'semester': semester,
       'displayName': displayName,
+      'totalStudents': totalStudents,
+      'classTeacherId': classTeacherId,
+      'classTeacherName': classTeacherName,
     };
   }
 }

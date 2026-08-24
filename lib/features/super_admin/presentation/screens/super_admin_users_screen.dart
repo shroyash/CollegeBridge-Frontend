@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../controllers/super_admin_providers.dart';
 import '../../domain/entities/super_admin_models.dart';
+import 'user_detail_modal.dart';
 
 class SuperAdminUsersScreen extends ConsumerStatefulWidget {
   const SuperAdminUsersScreen({super.key});
@@ -71,12 +72,6 @@ class _SuperAdminUsersScreenState
             ),
           ],
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: Color(0xFF2563EB)),
-            onPressed: () => notifier.loadUsers(refresh: true),
-          ),
-        ],
       ),
       body: RefreshIndicator(
         color: const Color(0xFF2563EB),
@@ -387,114 +382,144 @@ class _UserCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final roleColor = switch (user.role) {
-      'ADMIN' => const Color(0xFF2563EB),
-      'TEACHER' => const Color(0xFF10B981),
-      'STUDENT' => const Color(0xFF8B5CF6),
+    final roleColor = switch (user.role.toUpperCase()) {
+      'ADMIN' || 'SUPER_ADMIN' => const Color(0xFF7C3AED),
+      'TEACHER' => const Color(0xFF0284C7),
+      'STUDENT' => const Color(0xFF16A34A),
       _ => const Color(0xFF64748B),
     };
 
-    final roleBg = roleColor.withOpacity(0.1);
+    final isSuspended = user.status.toUpperCase() == 'SUSPENDED';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 8,
             offset: const Offset(0, 2),
           )
         ],
       ),
-      child: Row(
-        children: [
-          // Initials Avatar
-          CircleAvatar(
-            radius: 22,
-            backgroundColor: roleBg,
-            child: Text(
-              user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
-              style: GoogleFonts.inter(
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                color: roleColor,
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        user.name,
+      child: InkWell(
+        onTap: () => UserDetailModal.show(context, user),
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              // Initials Avatar
+              CircleAvatar(
+                radius: 22,
+                backgroundColor: roleColor.withValues(alpha: 0.1),
+                backgroundImage: user.profileImage != null && user.profileImage!.isNotEmpty
+                    ? NetworkImage(user.profileImage!)
+                    : null,
+                child: user.profileImage == null || user.profileImage!.isEmpty
+                    ? Text(
+                        user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
                         style: GoogleFonts.inter(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF0F172A),
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: roleBg,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        user.role,
-                        style: GoogleFonts.inter(
-                          fontSize: 9,
+                          fontSize: 16,
                           fontWeight: FontWeight.w800,
                           color: roleColor,
                         ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  user.email,
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    color: const Color(0xFF64748B),
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-                if (user.institutionName != null) ...[
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      const Icon(Icons.business_rounded,
-                          size: 12, color: Color(0xFF94A3B8)),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          user.institutionName!,
-                          style: GoogleFonts.inter(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: const Color(0xFF94A3B8),
+                      )
+                    : null,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            user.name,
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF0F172A),
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          overflow: TextOverflow.ellipsis,
                         ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: roleColor.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            user.role,
+                            style: GoogleFonts.inter(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800,
+                              color: roleColor,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      user.email,
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: const Color(0xFF64748B),
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (user.institutionName != null) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          const Icon(Icons.business_rounded,
+                              size: 12, color: Color(0xFF94A3B8)),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              user.institutionName!,
+                              style: GoogleFonts.inter(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                                color: const Color(0xFF94A3B8),
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: isSuspended ? const Color(0xFFFEE2E2) : const Color(0xFFDCFCE7),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  user.status,
+                  style: GoogleFonts.inter(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                    color: isSuspended ? const Color(0xFFDC2626) : const Color(0xFF16A34A),
                   ),
-                ],
-              ],
-            ),
+                ),
+              ),
+              const SizedBox(width: 4),
+              const Icon(Icons.chevron_right_rounded, color: Color(0xFF94A3B8), size: 20),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

@@ -1,7 +1,7 @@
 abstract class ApiConstants {
   // Use 10.0.2.2 for Android emulator → maps to host machine localhost.
   // For physical device: use your machine's local IP (e.g. http://192.168.x.x:8080)
-static const String baseUrl = 'http://localhost:8080';
+  static const String baseUrl = 'http://localhost:8080';
   static const Duration connectTimeout = Duration(seconds: 15);
   static const Duration receiveTimeout = Duration(seconds: 15);
 
@@ -42,6 +42,9 @@ static const String baseUrl = 'http://localhost:8080';
   static const String adminUsers = '/api/admin/users';
   static const String adminTeachers = '/api/admin/teachers';
   static const String adminTeacherAssignments = '/api/v1/admin/teachers';
+  static const String adminStudents = '/api/admin/students';
+  static const String adminStudentsFilterOptions = '/api/admin/students/filter-options';
+  static const String adminStudentsBulkTransfer = '/api/admin/students/bulk-transfer';
 
   // Academic
   static const String mySubjects = '/api/academic/subjects/my-subjects';
@@ -55,4 +58,3 @@ static const String baseUrl = 'http://localhost:8080';
   static const String adminAcademicSubjects = '/api/admin/academic/subjects';
   static const String adminAcademicSubjectsBatch = '/api/admin/academic/subjects/batch';
 }
-

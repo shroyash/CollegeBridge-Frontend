@@ -10,7 +10,7 @@ class StudentProfileDetailsModel extends StudentProfileDetails {
   factory StudentProfileDetailsModel.fromJson(Map<String, dynamic> json) {
     return StudentProfileDetailsModel(
       faculty: json['faculty'] as String?,
-      semester: json['semester'] as String?,
+      semester: json['semester']?.toString(),
       academicClassId: (json['academicClassId'] as num?)?.toInt(),
     );
   }

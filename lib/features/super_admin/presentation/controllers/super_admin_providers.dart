@@ -254,6 +254,24 @@ class SuperAdminUsersNotifier extends StateNotifier<SuperAdminUsersState> {
     );
     loadUsers(refresh: true);
   }
+
+  Future<void> suspendUser(int userId) async {
+    try {
+      await _dataSource.suspendUser(userId);
+      await loadUsers(refresh: true);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> activateUser(int userId) async {
+    try {
+      await _dataSource.activateUser(userId);
+      await loadUsers(refresh: true);
+    } catch (e) {
+      rethrow;
+    }
+  }
 }
 
 final superAdminUsersProvider =

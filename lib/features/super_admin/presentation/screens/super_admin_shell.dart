@@ -4,7 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'super_admin_dashboard_screen.dart';
 import 'super_admin_institutions_screen.dart';
-import 'super_admin_requests_screen.dart';
 import 'super_admin_settings_screen.dart';
 import 'super_admin_users_screen.dart';
 
@@ -19,12 +18,11 @@ class SuperAdminShell extends ConsumerWidget {
 
     return Scaffold(
       body: IndexedStack(
-        index: currentIndex,
+        index: currentIndex.clamp(0, 3),
         children: const [
           SuperAdminDashboardScreen(),
-          SuperAdminInstitutionsScreen(),
           SuperAdminUsersScreen(),
-          SuperAdminRequestsScreen(),
+          SuperAdminInstitutionsScreen(),
           SuperAdminSettingsScreen(),
         ],
       ),
@@ -33,15 +31,16 @@ class SuperAdminShell extends ConsumerWidget {
           color: Colors.white,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.06),
+              color: Colors.black.withValues(alpha: 0.06),
               blurRadius: 16,
               offset: const Offset(0, -4),
             ),
           ],
         ),
         child: BottomNavigationBar(
-          currentIndex: currentIndex,
-          onTap: (index) => ref.read(superAdminTabProvider.notifier).state = index,
+          currentIndex: currentIndex.clamp(0, 3),
+          onTap: (index) =>
+              ref.read(superAdminTabProvider.notifier).state = index,
           type: BottomNavigationBarType.fixed,
           backgroundColor: Colors.white,
           selectedItemColor: const Color(0xFF2563EB),
@@ -57,29 +56,24 @@ class SuperAdminShell extends ConsumerWidget {
           elevation: 0,
           items: const [
             BottomNavigationBarItem(
-              icon: Icon(Icons.dashboard_rounded),
-              activeIcon: Icon(Icons.dashboard_rounded),
+              icon: Icon(Icons.grid_view_rounded),
+              activeIcon: Icon(Icons.grid_view_rounded),
               label: 'Dashboard',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.domain_rounded),
-              activeIcon: Icon(Icons.domain_rounded),
-              label: 'Institutions',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.people_rounded),
-              activeIcon: Icon(Icons.people_rounded),
+              icon: Icon(Icons.people_alt_rounded),
+              activeIcon: Icon(Icons.people_alt_rounded),
               label: 'Users',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.assignment_turned_in_rounded),
-              activeIcon: Icon(Icons.assignment_turned_in_rounded),
-              label: 'Requests',
+              icon: Icon(Icons.business_rounded),
+              activeIcon: Icon(Icons.business_rounded),
+              label: 'Institutions',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.more_horiz_rounded),
-              activeIcon: Icon(Icons.more_horiz_rounded),
-              label: 'More',
+              icon: Icon(Icons.settings_rounded),
+              activeIcon: Icon(Icons.settings_rounded),
+              label: 'Settings',
             ),
           ],
         ),

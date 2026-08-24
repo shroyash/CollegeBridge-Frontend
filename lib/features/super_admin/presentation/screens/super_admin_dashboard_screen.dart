@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../controllers/super_admin_providers.dart';
 import '../../domain/entities/super_admin_models.dart';
+import '../controllers/super_admin_providers.dart';
+import 'super_admin_profile_modal.dart';
 import 'super_admin_shell.dart';
 
 class SuperAdminDashboardScreen extends ConsumerStatefulWidget {
@@ -34,32 +35,54 @@ class _SuperAdminDashboardScreenState
         backgroundColor: Colors.white,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Super Admin Dashboard',
-              style: GoogleFonts.inter(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: const Color(0xFF0F172A),
+        toolbarHeight: 70,
+        title: Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'Welcome back,',
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: const Color(0xFF64748B),
+                ),
               ),
-            ),
-            Text(
-              'Platform Command Center',
-              style: GoogleFonts.inter(
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-                color: const Color(0xFF64748B),
+              const SizedBox(height: 2),
+              Text(
+                'Super Admin',
+                style: GoogleFonts.inter(
+                  fontSize: 19,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF0F172A),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: Color(0xFF2563EB)),
-            onPressed: () =>
-                ref.read(superAdminDashboardProvider.notifier).loadDashboard(),
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: InkWell(
+              onTap: () => SuperAdminProfileModal.show(context),
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: const Icon(
+                  Icons.person_outline_rounded,
+                  color: Color(0xFF475569),
+                  size: 22,
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -74,21 +97,85 @@ class _SuperAdminDashboardScreenState
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // ── 1. Global System Health Banner ──
-              const _SystemHealthCard(),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFF1F5F9)),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Global System Health',
+                            style: GoogleFonts.inter(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: const Color(0xFF0F172A),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'All tenant clusters operational',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              color: const Color(0xFF64748B),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFDCFCE7),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.bar_chart_rounded,
+                            size: 14,
+                            color: Color(0xFF16A34A),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'OPTIMAL',
+                            style: GoogleFonts.inter(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              color: const Color(0xFF16A34A),
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
               const SizedBox(height: 20),
 
-              // ── Section Title ──
+              // ── 2. Multi-Tenant Overview Grid ──
               Text(
-                'Multi-Tenant Overview',
+                'MULTI-TENANT OVERVIEW',
                 style: GoogleFonts.inter(
-                  fontSize: 15,
+                  fontSize: 11,
                   fontWeight: FontWeight.w700,
-                  color: const Color(0xFF0F172A),
+                  color: const Color(0xFF64748B),
+                  letterSpacing: 0.8,
                 ),
               ),
               const SizedBox(height: 12),
 
-              // ── 2. Metric Grid ──
               if (state.isLoading && state.stats == null)
                 const Center(
                   child: Padding(
@@ -108,60 +195,17 @@ class _SuperAdminDashboardScreenState
 
               const SizedBox(height: 24),
 
-              // ── 3. Pending Institutions Review Queue ──
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        'Pending Approvals',
-                        style: GoogleFonts.inter(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF0F172A),
-                        ),
-                      ),
-                      if (state.stats != null && state.stats!.pendingInstitutions > 0) ...[
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFF7ED),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFFFFEDD5)),
-                          ),
-                          child: Text(
-                            '${state.stats!.pendingInstitutions}',
-                            style: GoogleFonts.inter(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: const Color(0xFFF97316),
-                            ),
-                          ),
-                        ),
-                      ]
-                    ],
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      // Switch to Institutions tab (Index 1) and set Pending tab (Index 1)
-                      ref.read(superAdminTabProvider.notifier).state = 1;
-                      ref.read(superAdminInstitutionsProvider.notifier).setTab(1);
-                    },
-                    child: Text(
-                      'View All',
-                      style: GoogleFonts.inter(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF2563EB),
-                      ),
-                    ),
-                  ),
-                ],
+              // ── 3. Pending Institutions Queue ──
+              Text(
+                'PENDING INSTITUTIONS',
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF64748B),
+                  letterSpacing: 0.8,
+                ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
 
               if (state.pendingQueue.isEmpty)
                 const _EmptyPendingCard()
@@ -184,102 +228,8 @@ class _SuperAdminDashboardScreenState
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-
-class _SystemHealthCard extends StatelessWidget {
-  const _SystemHealthCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF0F172A).withOpacity(0.15),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: const Color(0xFF10B981).withOpacity(0.15),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.verified_user_rounded,
-              color: Color(0xFF10B981),
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      'GLOBAL SYSTEM HEALTH',
-                      style: GoogleFonts.inter(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        color: const Color(0xFF94A3B8),
-                        letterSpacing: 0.8,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF10B981),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        'OPTIMAL',
-                        style: GoogleFonts.inter(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'All tenant clusters operational',
-                  style: GoogleFonts.inter(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            '99.99%',
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              fontWeight: FontWeight.w800,
-              color: const Color(0xFF10B981),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+// Metric Grid matching mock layout
+// ─────────────────────────────────────────────────────────────────────────────
 
 class _MetricGrid extends StatelessWidget {
   final SuperAdminDashboardStats stats;
@@ -292,118 +242,153 @@ class _MetricGrid extends StatelessWidget {
       crossAxisCount: 2,
       crossAxisSpacing: 12,
       mainAxisSpacing: 12,
-      childAspectRatio: 1.5,
+      childAspectRatio: 1.35,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       children: [
-        _MetricCard(
-          title: 'Total Institutions',
+        // 1. Total Institutions
+        _StatCard(
+          title: 'Total\ninstitutions',
           value: '${stats.totalInstitutions}',
-          icon: Icons.domain_rounded,
-          iconColor: const Color(0xFF2563EB),
-          bgColor: const Color(0xFFEFF6FF),
+          icon: Icons.business_rounded,
+          iconColor: const Color(0xFF475569),
+          titleColor: const Color(0xFF64748B),
+          valueColor: const Color(0xFF0F172A),
         ),
-        _MetricCard(
-          title: 'Pending Approval',
+
+        // 2. Pending Approval (Orange left accent border)
+        _StatCard(
+          title: 'Pending\napproval',
           value: '${stats.pendingInstitutions}',
-          icon: Icons.pending_actions_rounded,
+          icon: Icons.assignment_late_outlined,
           iconColor: const Color(0xFFF97316),
-          bgColor: const Color(0xFFFFF7ED),
+          titleColor: const Color(0xFFF97316),
+          valueColor: const Color(0xFFF97316),
+          leftAccentColor: const Color(0xFFF97316),
         ),
-        _MetricCard(
-          title: 'Active Institutions',
+
+        // 3. Active Institutions
+        _StatCard(
+          title: 'Active\ninstitutions',
           value: '${stats.activeInstitutions}',
-          icon: Icons.check_circle_rounded,
+          icon: Icons.check_circle_outline_rounded,
           iconColor: const Color(0xFF10B981),
-          bgColor: const Color(0xFFECFDF5),
+          titleColor: const Color(0xFF64748B),
+          valueColor: const Color(0xFF0F172A),
         ),
-        _MetricCard(
+
+        // 4. Suspended (Red left accent border)
+        _StatCard(
           title: 'Suspended',
           value: '${stats.suspendedInstitutions}',
-          icon: Icons.pause_circle_rounded,
-          iconColor: const Color(0xFFEF4444),
-          bgColor: const Color(0xFFFEF2F2),
+          icon: Icons.block_rounded,
+          iconColor: const Color(0xFFDC2626),
+          titleColor: const Color(0xFFDC2626),
+          valueColor: const Color(0xFFDC2626),
+          leftAccentColor: const Color(0xFFDC2626),
         ),
       ],
     );
   }
 }
 
-class _MetricCard extends StatelessWidget {
+class _StatCard extends StatelessWidget {
   final String title;
   final String value;
   final IconData icon;
   final Color iconColor;
-  final Color bgColor;
+  final Color titleColor;
+  final Color valueColor;
+  final Color? leftAccentColor;
 
-  const _MetricCard({
+  const _StatCard({
     required this.title,
     required this.value,
     required this.icon,
     required this.iconColor,
-    required this.bgColor,
+    required this.titleColor,
+    required this.valueColor,
+    this.leftAccentColor,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          )
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Stack(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
+          // Optional Left Color Accent Bar
+          if (leftAccentColor != null)
+            Positioned(
+              left: 0,
+              top: 0,
+              bottom: 0,
+              child: Container(
+                width: 4,
                 decoration: BoxDecoration(
-                  color: bgColor,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(icon, color: iconColor, size: 20),
-              ),
-              Icon(Icons.trending_up_rounded,
-                  color: const Color(0xFF10B981), size: 16),
-            ],
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                value,
-                style: GoogleFonts.inter(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  color: const Color(0xFF0F172A),
+                  color: leftAccentColor,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    bottomLeft: Radius.circular(16),
+                  ),
                 ),
               ),
-              Text(
-                title,
-                style: GoogleFonts.inter(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  color: const Color(0xFF64748B),
+            ),
+          Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(icon, color: iconColor, size: 22),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: titleColor,
+                          height: 1.2,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
+                Text(
+                  value,
+                  style: GoogleFonts.inter(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w800,
+                    color: valueColor,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Pending Institution Card matching mock layout
+// ─────────────────────────────────────────────────────────────────────────────
 
 class _PendingReviewCard extends ConsumerWidget {
   final SuperAdminPendingInstitution institution;
@@ -414,32 +399,21 @@ class _PendingReviewCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFF1F5F9)),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 8,
             offset: const Offset(0, 2),
-          )
+          ),
         ],
       ),
       child: Row(
         children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFF7ED),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(Icons.school_rounded,
-                color: Color(0xFFF97316), size: 22),
-          ),
-          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -447,40 +421,41 @@ class _PendingReviewCard extends ConsumerWidget {
                 Text(
                   institution.institutionName,
                   style: GoogleFonts.inter(
-                    fontSize: 14,
+                    fontSize: 15,
                     fontWeight: FontWeight.w700,
                     color: const Color(0xFF0F172A),
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 4),
                 Text(
-                  institution.contactPerson != null
-                      ? 'Contact: ${institution.contactPerson}'
-                      : 'Location: ${institution.location}',
+                  _buildSubtitle(),
                   style: GoogleFonts.inter(
-                    fontSize: 11,
+                    fontSize: 12,
                     color: const Color(0xFF64748B),
                   ),
                 ),
               ],
             ),
           ),
+          const SizedBox(width: 12),
           ElevatedButton(
             onPressed: () {
-              ref.read(superAdminTabProvider.notifier).state = 1;
+              // Switch to Institutions tab (Index 2 in updated 4-tab shell)
+              ref.read(superAdminTabProvider.notifier).state = 2;
               ref.read(superAdminInstitutionsProvider.notifier).setTab(1);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF2563EB),
               elevation: 0,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8)),
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
             child: Text(
               'Review',
               style: GoogleFonts.inter(
-                fontSize: 12,
+                fontSize: 13,
                 fontWeight: FontWeight.w700,
                 color: Colors.white,
               ),
@@ -489,6 +464,20 @@ class _PendingReviewCard extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  String _buildSubtitle() {
+    final parts = <String>[];
+    if (institution.code != null && institution.code!.isNotEmpty) {
+      parts.add('Code ${institution.code}');
+    }
+    if (institution.location.isNotEmpty) {
+      parts.add(institution.location);
+    }
+    if (parts.isEmpty) {
+      parts.add('Submitted recently');
+    }
+    return parts.join(' · ');
   }
 }
 
@@ -501,8 +490,8 @@ class _EmptyPendingCard extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFF1F5F9)),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: Center(
         child: Text(
@@ -529,7 +518,8 @@ class _ErrorCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: const Color(0xFFFEF2F2),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFFEE2E2)),
       ),
       child: Row(
         children: [
@@ -538,7 +528,8 @@ class _ErrorCard extends StatelessWidget {
           Expanded(
             child: Text(
               error,
-              style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF991B1B)),
+              style: GoogleFonts.inter(
+                  fontSize: 12, color: const Color(0xFF991B1B)),
             ),
           ),
           TextButton(

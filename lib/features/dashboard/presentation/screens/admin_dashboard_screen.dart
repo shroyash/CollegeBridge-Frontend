@@ -9,6 +9,12 @@ import '../widgets/quick_action_tile.dart';
 
 import '../../../admin_users/presentation/screens/manage_users_screen.dart';
 import '../../../institution_admin/presentation/screens/academic_management_screen.dart';
+import '../../../institution_admin/presentation/screens/admin_profile_screen.dart';
+import '../../../institution_admin/presentation/screens/institution_profile_screen.dart';
+import '../../../institution_admin/presentation/screens/manage_classes_screen.dart';
+import '../../../institution_admin/presentation/screens/student_management_screen.dart';
+import '../../../institution_admin/presentation/widgets/assign_subject_dialog.dart';
+import '../../../institution_admin/presentation/widgets/teacher_registration_dialog.dart';
 
 class AdminDashboardScreen extends ConsumerStatefulWidget {
   final String userName;
@@ -77,7 +83,14 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                       ),
                       IconButton(
                         icon: const Icon(Icons.settings_outlined, color: Colors.white),
-                        onPressed: () {},
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const InstitutionProfileScreen(),
+                            ),
+                          );
+                        },
                       ),
                     ],
                   )
@@ -128,35 +141,63 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                                       ),
                                     ),
                                     const SizedBox(height: 16),
+
                                     QuickActionTile(
-                                      title: 'Broadcast Message',
-                                      icon: Icons.campaign_outlined,
-                                      iconColor: const Color(0xFF2563EB),
-                                      iconBackgroundColor: const Color(0xFFDBEAFE),
-                                      onTap: () {},
-                                    ),
-                                    QuickActionTile(
-                                      title: 'Holiday Approval',
-                                      icon: Icons.event_busy_outlined,
-                                      iconColor: const Color(0xFFDC2626),
-                                      iconBackgroundColor: const Color(0xFFFEE2E2),
-                                      badgeCount: 1,
-                                      onTap: () {},
-                                    ),
-                                    QuickActionTile(
-                                      title: 'Manage Users',
-                                      icon: Icons.people_outline,
+                                      title: 'Manage Classes',
+                                      icon: Icons.class_outlined,
                                       iconColor: const Color(0xFF2563EB),
                                       iconBackgroundColor: const Color(0xFFDBEAFE),
                                       onTap: () {
                                         Navigator.push(
                                           context,
                                           MaterialPageRoute(
-                                            builder: (context) => const ManageUsersScreen(),
+                                            builder: (context) => const ManageClassesScreen(),
                                           ),
                                         );
                                       },
                                     ),
+
+                                    QuickActionTile(
+                                      title: 'Teacher Registration',
+                                      icon: Icons.person_add_alt_1_outlined,
+                                      iconColor: const Color(0xFF10B981),
+                                      iconBackgroundColor: const Color(0xFFD1FAE5),
+                                      onTap: () {
+                                        showDialog(
+                                          context: context,
+                                          builder: (_) => const TeacherRegistrationDialog(),
+                                        );
+                                      },
+                                    ),
+
+                                    QuickActionTile(
+                                      title: 'Assign Subject to Teacher',
+                                      icon: Icons.assignment_ind_outlined,
+                                      iconColor: const Color(0xFF8B5CF6),
+                                      iconBackgroundColor: const Color(0xFFF5F3FF),
+                                      onTap: () {
+                                        showDialog(
+                                          context: context,
+                                          builder: (_) => const AssignSubjectDialog(),
+                                        );
+                                      },
+                                    ),
+
+                                    QuickActionTile(
+                                      title: 'Institution Profile',
+                                      icon: Icons.business_rounded,
+                                      iconColor: const Color(0xFF2563EB),
+                                      iconBackgroundColor: const Color(0xFFDBEAFE),
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => const InstitutionProfileScreen(),
+                                          ),
+                                        );
+                                      },
+                                    ),
+
                                     QuickActionTile(
                                       title: 'Academic & Subjects',
                                       icon: Icons.school_outlined,
@@ -172,46 +213,22 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                                       },
                                     ),
 
-                                    
-                                    const SizedBox(height: 24),
-                                    
-                                    // Insights
-                                    Container(
-                                      padding: const EdgeInsets.all(16),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFF8FAFC),
-                                        borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(color: const Color(0xFFE2E8F0)),
-                                      ),
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            children: const [
-                                              Icon(Icons.auto_awesome, color: Color(0xFF9333EA), size: 18),
-                                              SizedBox(width: 8),
-                                              Text(
-                                                'ADMIN INSIGHTS',
-                                                style: TextStyle(
-                                                  color: Color(0xFF9333EA),
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.w700,
-                                                ),
-                                              ),
-                                            ],
+                                    QuickActionTile(
+                                      title: 'Student Cohorts & Transfer',
+                                      icon: Icons.swap_horiz_rounded,
+                                      iconColor: const Color(0xFF16A34A),
+                                      iconBackgroundColor: const Color(0xFFDCFCE7),
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => const StudentManagementScreen(),
                                           ),
-                                          const SizedBox(height: 12),
-                                          const Text(
-                                            'Student attendance is up by 4% this week. Consider broadcasting the upcoming exam schedule for the BCA department.',
-                                            style: TextStyle(
-                                              color: Color(0xFF475569),
-                                              fontSize: 14,
-                                              height: 1.5,
-                                            ),
-                                          )
-                                        ],
-                                      ),
-                                    )
+                                        );
+                                      },
+                                    ),
+
+                                    const SizedBox(height: 24),
                                   ],
                                 ),
                               ),
@@ -235,7 +252,15 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
               ),
             );
           } else if (index == 3) {
-            _confirmLogout(context);
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => AdminProfileScreen(
+                  userName: widget.userName,
+                  onLogout: widget.onLogout,
+                ),
+              ),
+            );
           }
         },
         items: const [
@@ -299,39 +324,6 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
           subtitle: 'Delivery', // static mock metric as per design
         ),
       ],
-    );
-  }
-
-  void _confirmLogout(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Logout',
-            style: TextStyle(fontWeight: FontWeight.bold)),
-        content: const Text('Are you sure you want to logout?'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              await ref
-                  .read(profileNotifierProvider.notifier)
-                  .logoutAndClear();
-              if (widget.onLogout != null) {
-                widget.onLogout!();
-              }
-            },
-            style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFDC2626)),
-            child: const Text('Logout',
-                style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
     );
   }
 }

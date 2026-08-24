@@ -8,6 +8,7 @@ import '../../domain/entities/user_profile.dart';
 import 'assign_classes_screen.dart';
 import 'register_teacher_screen.dart';
 import '../widgets/student_details_dialog.dart';
+import '../../../institution_admin/presentation/screens/student_management_screen.dart';
 
 class ManageUsersScreen extends ConsumerStatefulWidget {
   const ManageUsersScreen({super.key});
@@ -85,7 +86,25 @@ class _ManageUsersScreenState extends ConsumerState<ManageUsersScreen> {
                 ),
               ),
             )
-          : null,
+          : FloatingActionButton.extended(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const StudentManagementScreen(),
+                  ),
+                );
+              },
+              backgroundColor: const Color(0xFF1E40AF),
+              icon: const Icon(Icons.swap_horiz, color: Colors.white, size: 20),
+              label: const Text(
+                'Cohort Filters & Transfer',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
       body: Column(
         children: [
           // Search Input Bar
@@ -239,6 +258,74 @@ class _ManageUsersScreenState extends ConsumerState<ManageUsersScreen> {
               ],
             ),
           ),
+          if (notifier.currentRole == 'STUDENT')
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF1E40AF), Color(0xFF2563EB)],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.school, color: Colors.white, size: 28),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
+                          Text(
+                            'Bulk Cohort Transfer',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                          ),
+                          SizedBox(height: 2),
+                          Text(
+                            'Filter by Faculty & Sem • Promote or transfer students in batch',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const StudentManagementScreen(),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: const Color(0xFF1E40AF),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text(
+                        'Open',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           const SizedBox(height: 8),
 
           // User List View

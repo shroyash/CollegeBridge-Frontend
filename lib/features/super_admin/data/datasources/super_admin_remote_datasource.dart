@@ -256,4 +256,30 @@ class SuperAdminRemoteDataSource {
       throw _mapDioException(e);
     }
   }
+
+  /// POST /api/super-admin/users/{id}/suspend
+  Future<void> suspendUser(int id) async {
+    try {
+      final options = await _authOptions();
+      await _apiClient.post<dynamic>(
+        '${ApiConstants.superAdminUsers}/$id/suspend',
+        options: options,
+      );
+    } on DioException catch (e) {
+      throw _mapDioException(e);
+    }
+  }
+
+  /// POST /api/super-admin/users/{id}/activate
+  Future<void> activateUser(int id) async {
+    try {
+      final options = await _authOptions();
+      await _apiClient.post<dynamic>(
+        '${ApiConstants.superAdminUsers}/$id/activate',
+        options: options,
+      );
+    } on DioException catch (e) {
+      throw _mapDioException(e);
+    }
+  }
 }

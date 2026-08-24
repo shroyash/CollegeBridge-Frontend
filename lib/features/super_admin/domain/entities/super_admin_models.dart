@@ -65,6 +65,12 @@ class SuperAdminUser {
   final int? institutionId;
   final String? institutionName;
   final String? createdAt;
+  final String? phone;
+  final String? faculty;
+  final String? semester;
+  final String? codeId;
+  final String? verificationStatus;
+  final String? lastActivity;
 
   SuperAdminUser({
     required this.id,
@@ -76,6 +82,12 @@ class SuperAdminUser {
     this.institutionId,
     this.institutionName,
     this.createdAt,
+    this.phone,
+    this.faculty,
+    this.semester,
+    this.codeId,
+    this.verificationStatus,
+    this.lastActivity,
   });
 
   factory SuperAdminUser.fromJson(Map<String, dynamic> json) {
@@ -89,6 +101,12 @@ class SuperAdminUser {
       institutionId: json['institutionId'],
       institutionName: json['institutionName'],
       createdAt: json['createdAt'],
+      phone: json['phone'] ?? json['contactNumber'],
+      faculty: json['faculty'] ?? json['department'],
+      semester: json['semester']?.toString(),
+      codeId: json['studentId'] ?? json['teacherId'] ?? json['userCode'],
+      verificationStatus: json['verificationStatus'] ?? json['verificationState'],
+      lastActivity: json['lastActivity'] ?? json['updatedAt'],
     );
   }
 }
@@ -96,23 +114,37 @@ class SuperAdminUser {
 class SuperAdminInstitution {
   final int institutionId;
   final String institutionName;
+  final String? code;
   final String? profileImage;
   final String location;
   final String? website;
+  final String? contactEmail;
+  final String? contactPhone;
+  final String? address;
   final String status;
   final int totalStudents;
   final int totalTeachers;
+  final int totalAdmins;
+  final int activeUsers;
+  final int suspendedUsers;
   final String? createdAt;
 
   SuperAdminInstitution({
     required this.institutionId,
     required this.institutionName,
+    this.code,
     this.profileImage,
     required this.location,
     this.website,
+    this.contactEmail,
+    this.contactPhone,
+    this.address,
     required this.status,
     required this.totalStudents,
     required this.totalTeachers,
+    this.totalAdmins = 0,
+    this.activeUsers = 0,
+    this.suspendedUsers = 0,
     this.createdAt,
   });
 
@@ -120,12 +152,19 @@ class SuperAdminInstitution {
     return SuperAdminInstitution(
       institutionId: json['institutionId'] ?? 0,
       institutionName: json['institutionName'] ?? json['name'] ?? '',
+      code: json['code'],
       profileImage: json['profileImage'],
       location: json['location'] ?? 'Kathmandu',
       website: json['website'],
+      contactEmail: json['contactEmail'] ?? json['email'],
+      contactPhone: json['contactPhone'] ?? json['phone'],
+      address: json['address'] ?? json['location'],
       status: json['status'] ?? 'ACTIVE',
       totalStudents: json['totalStudents'] ?? 0,
       totalTeachers: json['totalTeachers'] ?? 0,
+      totalAdmins: json['totalAdmins'] ?? 0,
+      activeUsers: json['activeUsers'] ?? 0,
+      suspendedUsers: json['suspendedUsers'] ?? 0,
       createdAt: json['createdAt'],
     );
   }
@@ -134,6 +173,7 @@ class SuperAdminInstitution {
 class SuperAdminPendingInstitution {
   final int institutionId;
   final String institutionName;
+  final String? code;
   final String? profileImage;
   final String location;
   final String? website;
@@ -147,6 +187,7 @@ class SuperAdminPendingInstitution {
   SuperAdminPendingInstitution({
     required this.institutionId,
     required this.institutionName,
+    this.code,
     this.profileImage,
     required this.location,
     this.website,
@@ -162,6 +203,7 @@ class SuperAdminPendingInstitution {
     return SuperAdminPendingInstitution(
       institutionId: json['institutionId'] ?? 0,
       institutionName: json['institutionName'] ?? json['name'] ?? '',
+      code: json['code'],
       profileImage: json['profileImage'],
       location: json['location'] ?? 'Kathmandu',
       website: json['website'],

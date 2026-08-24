@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../controllers/super_admin_providers.dart';
 import '../../domain/entities/super_admin_models.dart';
+import 'institution_detail_modal.dart';
 
 class SuperAdminInstitutionsScreen extends ConsumerStatefulWidget {
   const SuperAdminInstitutionsScreen({super.key});
@@ -62,12 +63,6 @@ class _SuperAdminInstitutionsScreenState
             ),
           ],
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: Color(0xFF2563EB)),
-            onPressed: () => notifier.loadData(refresh: true),
-          ),
-        ],
       ),
       body: Column(
         children: [
@@ -176,10 +171,6 @@ class _SuperAdminInstitutionsScreenState
                                     final inst = state.allInstitutions[index];
                                     return _AllInstitutionCard(
                                       institution: inst,
-                                      onSuspend: () =>
-                                          _confirmSuspend(context, notifier, inst),
-                                      onReactivate: () => _confirmReactivate(
-                                          context, notifier, inst),
                                     );
                                   },
                                 )
@@ -361,89 +352,6 @@ class _SuperAdminInstitutionsScreenState
     );
   }
 
-  void _confirmSuspend(BuildContext context,
-      SuperAdminInstitutionsNotifier notifier, SuperAdminInstitution inst) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('Suspend Institution?',
-            style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
-        content: Text(
-          'Suspending "${inst.institutionName}" will immediately block member access.',
-          style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF64748B)),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel',
-                style: GoogleFonts.inter(color: const Color(0xFF64748B))),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              try {
-                await notifier.suspendInstitution(inst.institutionId);
-                if (mounted) _showToast(context, 'Institution suspended.');
-              } catch (e) {
-                if (mounted) _showErrorToast(context, e.toString());
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFF97316),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8)),
-            ),
-            child: Text('Suspend',
-                style: GoogleFonts.inter(
-                    color: Colors.white, fontWeight: FontWeight.w700)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _confirmReactivate(BuildContext context,
-      SuperAdminInstitutionsNotifier notifier, SuperAdminInstitution inst) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('Reactivate Institution?',
-            style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
-        content: Text(
-          'Reactivating "${inst.institutionName}" will restore login access.',
-          style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF64748B)),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel',
-                style: GoogleFonts.inter(color: const Color(0xFF64748B))),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              try {
-                await notifier.reactivateInstitution(inst.institutionId);
-                if (mounted) _showToast(context, 'Institution reactivated.');
-              } catch (e) {
-                if (mounted) _showErrorToast(context, e.toString());
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF10B981),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8)),
-            ),
-            child: Text('Reactivate',
-                style: GoogleFonts.inter(
-                    color: Colors.white, fontWeight: FontWeight.w700)),
-          ),
-        ],
-      ),
-    );
-  }
 
   void _showToast(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -533,13 +441,9 @@ class _TabButton extends StatelessWidget {
 
 class _AllInstitutionCard extends StatelessWidget {
   final SuperAdminInstitution institution;
-  final VoidCallback onSuspend;
-  final VoidCallback onReactivate;
 
   const _AllInstitutionCard({
     required this.institution,
-    required this.onSuspend,
-    required this.onReactivate,
   });
 
   @override
@@ -548,122 +452,164 @@ class _AllInstitutionCard extends StatelessWidget {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           )
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: isActive
-                      ? const Color(0xFFECFDF5)
-                      : const Color(0xFFFFF7ED),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  isActive
-                      ? Icons.business_rounded
-                      : Icons.pause_circle_rounded,
-                  color: isActive
-                      ? const Color(0xFF10B981)
-                      : const Color(0xFFF97316),
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      institution.institutionName,
-                      style: GoogleFonts.inter(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF0F172A),
-                      ),
-                    ),
-                    Text(
-                      'Location: ${institution.location}',
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        color: const Color(0xFF64748B),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              _Badge(status: institution.status),
-            ],
-          ),
-          const SizedBox(height: 12),
-          const Divider(height: 1, color: Color(0xFFF1F5F9)),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: InkWell(
+        onTap: () => InstitutionDetailModal.show(context, institution),
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  const Icon(Icons.people_alt_rounded,
-                      size: 16, color: Color(0xFF2563EB)),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${institution.totalStudents} Students',
-                    style: GoogleFonts.inter(
-                        fontSize: 12, fontWeight: FontWeight.w600),
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: isActive
+                          ? const Color(0xFFECFDF5)
+                          : const Color(0xFFFEF2F2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      isActive
+                          ? Icons.business_rounded
+                          : Icons.block_rounded,
+                      color: isActive
+                          ? const Color(0xFF10B981)
+                          : const Color(0xFFDC2626),
+                      size: 22,
+                    ),
                   ),
                   const SizedBox(width: 12),
-                  const Icon(Icons.school_rounded,
-                      size: 16, color: Color(0xFF10B981)),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${institution.totalTeachers} Teachers',
-                    style: GoogleFonts.inter(
-                        fontSize: 12, fontWeight: FontWeight.w600),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          institution.institutionName,
+                          style: GoogleFonts.inter(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF0F172A),
+                          ),
+                        ),
+                        if (institution.code != null && institution.code!.isNotEmpty)
+                          Text(
+                            'Code: ${institution.code}',
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF64748B),
+                            ),
+                          )
+                        else
+                          Text(
+                            'Location: ${institution.location}',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              color: const Color(0xFF64748B),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  _Badge(status: institution.status),
+                ],
+              ),
+              const SizedBox(height: 12),
+              const Divider(height: 1, color: Color(0xFFF1F5F9)),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      InkWell(
+                        onTap: () => InstitutionDetailModal.show(context, institution, initialTabIndex: 0),
+                        borderRadius: BorderRadius.circular(6),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEFF6FF),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.people_alt_rounded,
+                                  size: 14, color: Color(0xFF2563EB)),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${institution.totalStudents} Students',
+                                style: GoogleFonts.inter(
+                                    fontSize: 11, fontWeight: FontWeight.w700, color: const Color(0xFF2563EB)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      InkWell(
+                        onTap: () => InstitutionDetailModal.show(context, institution, initialTabIndex: 1),
+                        borderRadius: BorderRadius.circular(6),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF0FDF4),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.school_rounded,
+                                  size: 14, color: Color(0xFF16A34A)),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${institution.totalTeachers} Teachers',
+                                style: GoogleFonts.inter(
+                                    fontSize: 11, fontWeight: FontWeight.w700, color: const Color(0xFF16A34A)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  ElevatedButton.icon(
+                    onPressed: () => InstitutionDetailModal.show(context, institution),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2563EB),
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                    ),
+                    icon: const Icon(Icons.info_outline_rounded, size: 14, color: Colors.white),
+                    label: Text(
+                      'View Details',
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
                   ),
                 ],
               ),
-              OutlinedButton(
-                onPressed: isActive ? onSuspend : onReactivate,
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(
-                    color: isActive
-                        ? const Color(0xFFFED7AA)
-                        : const Color(0xFFBBF7D0),
-                  ),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8)),
-                ),
-                child: Text(
-                  isActive ? 'Suspend' : 'Reactivate',
-                  style: GoogleFonts.inter(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: isActive
-                        ? const Color(0xFFF97316)
-                        : const Color(0xFF10B981),
-                  ),
-                ),
-              )
             ],
           ),
-        ],
+        ),
       ),
     );
   }
