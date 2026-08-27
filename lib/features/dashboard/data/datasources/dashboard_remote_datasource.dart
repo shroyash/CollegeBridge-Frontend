@@ -78,11 +78,20 @@ class DashboardRemoteDataSource {
   Future<List<SubjectModel>> fetchMySubjects() async {
     try {
       final options = await _authOptions();
-      final response = await _apiClient.get<List<dynamic>>(
+      final response = await _apiClient.get<dynamic>(
         ApiConstants.mySubjects,
         options: options,
       );
-      return (response.data as List<dynamic>)
+      final rawData = response.data;
+      final List<dynamic> list;
+      if (rawData is Map<String, dynamic> && rawData.containsKey('data')) {
+        list = rawData['data'] as List<dynamic>? ?? [];
+      } else if (rawData is List<dynamic>) {
+        list = rawData;
+      } else {
+        list = [];
+      }
+      return list
           .map((e) => SubjectModel.fromJson(e as Map<String, dynamic>))
           .toList();
     } on DioException catch (e) {

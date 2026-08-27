@@ -46,5 +46,6 @@ final authNotifierProvider =
     loginUseCase: ref.watch(loginUseCaseProvider),
     registerUseCase: ref.watch(registerUseCaseProvider),
     storageService: ref.watch(secureStorageProvider),
+    ref: ref,
   );
 });

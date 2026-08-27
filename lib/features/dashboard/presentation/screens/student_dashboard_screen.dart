@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/storage/secure_storage_service.dart';
+import 'package:bridge_mobile/features/auth/presentation/controllers/institution_provider.dart';
 import '../controllers/dashboard_providers.dart';
 import '../controllers/dashboard_state.dart';
 import '../../domain/entities/subject.dart';
 import '../widgets/subject_card.dart';
 import 'student_profile_screen.dart';
+import 'package:bridge_mobile/features/institution_admin/presentation/controllers/role_academic_providers.dart';
+import 'package:bridge_mobile/features/institution_admin/presentation/screens/student_class_screen.dart';
+import 'package:bridge_mobile/features/institution_admin/presentation/screens/student_classes_screen.dart';
+import 'package:bridge_mobile/features/institution_admin/presentation/screens/student_subject_detail_screen.dart';
+import 'package:bridge_mobile/features/institution_admin/presentation/screens/subject_members_screen.dart';
 
 class StudentDashboardScreen extends ConsumerStatefulWidget {
   final String userName;
@@ -21,6 +28,17 @@ class _StudentDashboardScreenState
     extends ConsumerState<StudentDashboardScreen> {
   int _selectedBottomNavIndex = 0;
 
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) {
+      return 'Good Morning';
+    } else if (hour < 17) {
+      return 'Good Afternoon';
+    } else {
+      return 'Good Evening';
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -32,6 +50,18 @@ class _StudentDashboardScreenState
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(studentDashboardNotifierProvider);
+    final classDetailAsync = ref.watch(studentClassDetailsProvider);
+    final currentInstitution = ref.watch(currentInstitutionProvider);
+
+    final dynamicInstitutionName = currentInstitution != null && currentInstitution.name.isNotEmpty
+        ? currentInstitution.name.toUpperCase()
+        : classDetailAsync.when(
+            data: (details) => (details != null && details.institutionName.isNotEmpty)
+                ? details.institutionName.toUpperCase()
+                : 'MY INSTITUTION',
+            loading: () => 'FETCHING INSTITUTION...',
+            error: (_, __) => 'MY INSTITUTION',
+          );
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -61,7 +91,7 @@ class _StudentDashboardScreenState
                               const Text('👋', style: TextStyle(fontSize: 22)),
                               const SizedBox(width: 8),
                               Text(
-                                'Good Morning, ${widget.userName.split(' ').first}',
+                                '${_getGreeting()}, ${widget.userName.split(' ').first}',
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 22,
@@ -71,15 +101,21 @@ class _StudentDashboardScreenState
                             ],
                           ),
                           const SizedBox(height: 4),
-                          Text(
-                            'STUDENT • ${DateTime.now().year}',
-                            style: TextStyle(
-                              color: Colors.blue[100],
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              const Icon(Icons.account_balance, color: Color(0xFFBFDBFE), size: 14),
+                              const SizedBox(width: 4),
+                              Text(
+                                '$dynamicInstitutionName • STUDENT • ${DateTime.now().year}',
+                                style: const TextStyle(
+                                  color: Color(0xFFBFDBFE),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
+                          ),const SizedBox(height: 8),
                           Row(
                             children: [
                               const Icon(Icons.calendar_month,
@@ -174,7 +210,19 @@ class _StudentDashboardScreenState
                                   child: _buildActionBtn(
                                       Icons.people_outline,
                                       'Members',
-                                      const Color(0xFF2563EB))),
+                                      const Color(0xFF2563EB),
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => const SubjectMembersScreen(
+                                              subjectName: 'My Enrolled Class',
+                                              teacherName: 'Teacher not assigned yet',
+                                              isFromDashboard: true,
+                                            ),
+                                          ),
+                                        );
+                                      })),
                             ],
                           ),
                           const SizedBox(height: 32),
@@ -191,7 +239,9 @@ class _StudentDashboardScreenState
                                 ),
                               ),
                               TextButton(
-                                onPressed: () {},
+                                onPressed: () {
+                                  setState(() => _selectedBottomNavIndex = 1);
+                                },
                                 child: const Text('See all >',
                                     style: TextStyle(
                                         color: Color(0xFF2563EB),
@@ -225,14 +275,30 @@ class _StudentDashboardScreenState
                               itemCount: state.data.length,
                               itemBuilder: (context, index) {
                                 final subject = state.data[index];
-                                return SubjectCard(
-                                  title: subject.name,
-                                  teacher: subject.faculty,
-                                  icon: _getSubjectIcon(subject.name),
-                                  hasUpdates: index % 2 == 0,
-                                  badgeText: index % 2 == 0
-                                      ? '${index + 1} New'
-                                      : 'No Updates',
+                                return GestureDetector(
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => StudentSubjectDetailScreen(
+                                          subjectId: subject.subjectId,
+                                          subjectName: subject.name,
+                                          teacherName: subject.faculty.isNotEmpty
+                                              ? subject.faculty
+                                              : 'Mr. Karki',
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  child: SubjectCard(
+                                    title: subject.name,
+                                    teacher: subject.faculty,
+                                    icon: _getSubjectIcon(subject.name),
+                                    hasUpdates: index % 2 == 0,
+                                    badgeText: index % 2 == 0
+                                        ? '${index + 1} New'
+                                        : 'No Updates',
+                                  ),
                                 );
                               },
                             ),
@@ -313,192 +379,9 @@ class _StudentDashboardScreenState
                 ),
               ],
             ),
-            // 1 – Subjects
-            Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF2563EB),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'My Classes',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            'All enrolled courses',
-                            style: TextStyle(
-                              color: Color(0xFFBFDBFE),
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Icons.book_outlined,
-                            color: Colors.white),
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: RefreshIndicator(
-                    onRefresh: () => ref
-                        .read(studentDashboardNotifierProvider.notifier)
-                        .fetchMySubjects(),
-                    child: state is DashboardLoading
-                        ? const Center(child: CircularProgressIndicator())
-                        : state is DashboardFailure<List<Subject>>
-                            ? Center(
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(Icons.error_outline,
-                                        color: Color(0xFFDC2626), size: 40),
-                                    const SizedBox(height: 12),
-                                    Text(state.message,
-                                        style: const TextStyle(
-                                            color: Color(0xFF64748B))),
-                                    const SizedBox(height: 16),
-                                    ElevatedButton(
-                                      onPressed: () => ref
-                                          .read(studentDashboardNotifierProvider
-                                              .notifier)
-                                          .fetchMySubjects(),
-                                      child: const Text('Retry'),
-                                    ),
-                                  ],
-                                ),
-                              )
-                            : state is DashboardSuccess<List<Subject>>
-                                ? state.data.isEmpty
-                                    ? const Center(
-                                        child: Text('No Classes enrolled.',
-                                            style: TextStyle(
-                                                color: Color(0xFF64748B))))
-                                    : ListView.separated(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 20, vertical: 16),
-                                        physics:
-                                            const AlwaysScrollableScrollPhysics(),
-                                        itemCount: state.data.length,
-                                        separatorBuilder: (_, __) =>
-                                            const SizedBox(height: 12),
-                                        itemBuilder: (context, index) {
-                                          final subject = state.data[index];
-                                          return Container(
-                                            padding: const EdgeInsets.all(16),
-                                            decoration: BoxDecoration(
-                                              color: Colors.white,
-                                              borderRadius:
-                                                  BorderRadius.circular(14),
-                                              border: Border.all(
-                                                  color:
-                                                      const Color(0xFFE2E8F0)),
-                                              boxShadow: [
-                                                BoxShadow(
-                                                  color: Colors.black
-                                                      .withValues(alpha: 0.02),
-                                                  blurRadius: 8,
-                                                  offset: const Offset(0, 2),
-                                                ),
-                                              ],
-                                            ),
-                                            child: Row(
-                                              children: [
-                                                Container(
-                                                  padding:
-                                                      const EdgeInsets.all(10),
-                                                  decoration: BoxDecoration(
-                                                    color: const Color(
-                                                        0xFFEFF6FF),
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            10),
-                                                  ),
-                                                  child: Icon(
-                                                      _getSubjectIcon(
-                                                          subject.name),
-                                                      color: const Color(
-                                                          0xFF2563EB),
-                                                      size: 22),
-                                                ),
-                                                const SizedBox(width: 14),
-                                                Expanded(
-                                                  child: Column(
-                                                    crossAxisAlignment:
-                                                        CrossAxisAlignment
-                                                            .start,
-                                                    children: [
-                                                      Text(
-                                                        subject.name,
-                                                        style: const TextStyle(
-                                                          fontSize: 15,
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                          color: Color(
-                                                              0xFF0F172A),
-                                                        ),
-                                                      ),
-                                                      const SizedBox(height: 4),
-                                                      Text(
-                                                        'Faculty: ${subject.faculty}',
-                                                        style: const TextStyle(
-                                                          fontSize: 12,
-                                                          color:
-                                                              Color(0xFF64748B),
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                                Container(
-                                                  padding:
-                                                      const EdgeInsets.symmetric(
-                                                          horizontal: 10,
-                                                          vertical: 4),
-                                                  decoration: BoxDecoration(
-                                                    color: const Color(
-                                                        0xFFEFF6FF),
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            8),
-                                                  ),
-                                                  child: Text(
-                                                    '${subject.creditHours} Cr',
-                                                    style: const TextStyle(
-                                                      fontSize: 12,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      color: Color(0xFF2563EB),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          );
-                                        },
-                                      )
-                                : const SizedBox.shrink(),
-                  ),
-                ),
-              ],
+            // 1 – Subjects / Classes (Image 1 UI)
+            StudentClassesScreen(
+              onBack: () => setState(() => _selectedBottomNavIndex = 0),
             ),
             // 2 – Alerts (placeholder)
             const Center(child: Text('Alerts')),
@@ -533,30 +416,34 @@ class _StudentDashboardScreenState
     );
   }
 
-  Widget _buildActionBtn(IconData icon, String label, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 28),
-          const SizedBox(height: 8),
-          Text(label,
-              style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 12,
-                  color: Color(0xFF0F172A))),
-        ],
+  Widget _buildActionBtn(IconData icon, String label, Color color, {VoidCallback? onTap}) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 28),
+            const SizedBox(height: 8),
+            Text(label,
+                style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                    color: Color(0xFF0F172A))),
+          ],
+        ),
       ),
     );
   }

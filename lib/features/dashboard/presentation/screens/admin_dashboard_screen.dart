@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/storage/secure_storage_service.dart';
+
 import '../controllers/dashboard_providers.dart';
 import '../controllers/dashboard_state.dart';
 import '../../domain/entities/dashboard_metric.dart';
@@ -16,6 +18,8 @@ import '../../../institution_admin/presentation/screens/student_management_scree
 import '../../../institution_admin/presentation/widgets/assign_subject_dialog.dart';
 import '../../../institution_admin/presentation/widgets/teacher_registration_dialog.dart';
 
+import '../../../auth/presentation/controllers/institution_provider.dart';
+
 class AdminDashboardScreen extends ConsumerStatefulWidget {
   final String userName;
   final VoidCallback? onLogout;
@@ -29,7 +33,6 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
   @override
   void initState() {
     super.initState();
-    // Fetch metrics on mount
     Future.microtask(() {
       ref.read(adminDashboardNotifierProvider.notifier).fetchDashboard();
     });
@@ -38,6 +41,8 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(adminDashboardNotifierProvider);
+    final currentInstitution = ref.watch(currentInstitutionProvider);
+    final displayInstitution = currentInstitution?.name;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -67,10 +72,11 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${widget.userName} • Administrator',
+                        '${widget.userName} • ${displayInstitution != null && displayInstitution.isNotEmpty ? displayInstitution : 'Administrator'}',
                         style: TextStyle(
                           color: Colors.blue[100],
                           fontSize: 13,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],

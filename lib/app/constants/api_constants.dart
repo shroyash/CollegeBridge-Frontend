@@ -57,4 +57,11 @@ abstract class ApiConstants {
   static const String adminAcademicClasses = '/api/admin/academic/classes';
   static const String adminAcademicSubjects = '/api/admin/academic/subjects';
   static const String adminAcademicSubjectsBatch = '/api/admin/academic/subjects/batch';
+
+  // Teacher Academic
+  static const String teacherMyClasses = '/api/v1/teacher/academic/my-classes';
+  static const String teacherClassDetails = '/api/v1/teacher/academic/classes'; // + /{classId}/details
+
+  // Student Academic
+  static const String studentClassDetails = '/api/v1/student/academic/class-details';
 }

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../admin_users/domain/entities/teacher_assignment.dart';
+import '../../../institution_admin/presentation/screens/teacher_classes_screen.dart';
+import '../../../institution_admin/presentation/screens/teacher_class_detail_screen.dart';
 import '../controllers/dashboard_providers.dart';
 import '../controllers/dashboard_state.dart';
 import 'teacher_profile_screen.dart';
@@ -80,8 +82,8 @@ class _TeacherDashboardScreenState
                 ),
               ),
             ),
-            // 1 – Classes (placeholder)
-            const Center(child: Text('Classes')),
+            // 1 – Classes
+            const TeacherClassesScreen(),
             // 2 – Notifications (placeholder)
             const Center(child: Text('Notifications')),
             // 3 – Profile

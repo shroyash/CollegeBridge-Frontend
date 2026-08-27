@@ -86,8 +86,16 @@ class ClassDetailModel {
   });
 
   factory ClassDetailModel.fromJson(Map<String, dynamic> json) {
-    final studentsJson = (json['students'] as List?)?.map((e) => ClassStudentModel.fromJson(e as Map<String, dynamic>)).toList() ?? [];
-    final teachersJson = (json['teachers'] as List?)?.map((e) => ClassTeacherModel.fromJson(e as Map<String, dynamic>)).toList() ?? [];
+    final studentsJson = (json['students'] as List?)
+            ?.whereType<Map>()
+            .map((e) => ClassStudentModel.fromJson(Map<String, dynamic>.from(e)))
+            .toList() ??
+        [];
+    final teachersJson = (json['teachers'] as List?)
+            ?.whereType<Map>()
+            .map((e) => ClassTeacherModel.fromJson(Map<String, dynamic>.from(e)))
+            .toList() ??
+        [];
 
     return ClassDetailModel(
       classId: (json['classId'] as num?)?.toInt() ?? 0,

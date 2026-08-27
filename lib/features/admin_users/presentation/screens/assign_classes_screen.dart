@@ -73,7 +73,7 @@ class _AssignClassesScreenState extends ConsumerState<AssignClassesScreen> {
             ),
             const SizedBox(height: 2),
             const Text(
-              'Assign Classes',
+              'Assign Subjects',
               style: TextStyle(
                 fontSize: 13,
                 color: Color(0xFF64748B),
@@ -180,7 +180,7 @@ class _AssignClassesScreenState extends ConsumerState<AssignClassesScreen> {
                                 color: Color(0xFF2563EB), size: 20),
                             SizedBox(width: 8),
                             Text(
-                              'Assigned Classes',
+                              'Assigned Subjects',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
@@ -204,7 +204,7 @@ class _AssignClassesScreenState extends ConsumerState<AssignClassesScreen> {
                       const Padding(
                         padding: EdgeInsets.symmetric(vertical: 12),
                         child: Text(
-                          'No classes assigned yet. Choose from available classes below.',
+                          'No subjects assigned yet. Choose from available subjects below.',
                           style: TextStyle(
                               color: Color(0xFF94A3B8), fontSize: 13),
                         ),
@@ -277,7 +277,7 @@ class _AssignClassesScreenState extends ConsumerState<AssignClassesScreen> {
 
               // Available Classes Section
               const Text(
-                'Available Classes',
+                'Available Subjects',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -294,7 +294,7 @@ class _AssignClassesScreenState extends ConsumerState<AssignClassesScreen> {
                         .notifier)
                     .searchAvailable(val),
                 decoration: InputDecoration(
-                  hintText: 'Search by course code or name...',
+                  hintText: 'Search by subject name or faculty program...',
                   hintStyle: const TextStyle(
                       color: Color(0xFF94A3B8), fontSize: 13),
                   prefixIcon: const Icon(Icons.search,

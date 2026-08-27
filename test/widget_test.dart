@@ -9,6 +9,7 @@ void main() {
     await tester.pumpWidget(
       const ProviderScope(child: BridgeApp()),
     );
+    await tester.pumpAndSettle();
     expect(find.byType(MaterialApp), findsOneWidget);
   });
 }

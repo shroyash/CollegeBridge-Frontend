@@ -30,8 +30,14 @@ class AuthRemoteDataSource {
           'password': password,
         },
       );
-      final data = response.data!['data'] as Map<String, dynamic>;
-      return AuthUserModel.fromJson(data);
+      final rawData = response.data;
+      if (rawData == null) {
+        throw Exception('Server returned an empty response.');
+      }
+      final rawMap = rawData is Map
+          ? Map<String, dynamic>.from(rawData)
+          : <String, dynamic>{};
+      return AuthUserModel.fromJson(rawMap);
     } on DioException catch (e) {
       throw _mapLoginDioException(e);
     }
@@ -58,8 +64,14 @@ class AuthRemoteDataSource {
           'semester': semester,
         },
       );
-      final data = response.data!['data'] as Map<String, dynamic>;
-      return AuthUserModel.fromJson(data);
+      final rawData = response.data;
+      if (rawData == null) {
+        throw Exception('Server returned an empty response.');
+      }
+      final rawMap = rawData is Map
+          ? Map<String, dynamic>.from(rawData)
+          : <String, dynamic>{};
+      return AuthUserModel.fromJson(rawMap);
     } on DioException catch (e) {
       throw _mapDioException(e);
     }

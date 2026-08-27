@@ -13,12 +13,18 @@ class SecureStorageService {
   static String? _cachedUserEmail;
   static String? _cachedUserName;
   static String? _cachedUserRole;
+  static int? _cachedInstitutionId;
+  static String? _cachedInstitutionCode;
+  static String? _cachedInstitutionName;
 
   static const String _keyAccessToken = 'auth_access_token';
   static const String _keyRefreshToken = 'auth_refresh_token';
   static const String _keyUserEmail = 'auth_user_email';
   static const String _keyUserName = 'auth_user_name';
   static const String _keyUserRole = 'auth_user_role';
+  static const String _keyInstitutionId = 'auth_institution_id';
+  static const String _keyInstitutionCode = 'auth_institution_code';
+  static const String _keyInstitutionName = 'auth_institution_name';
 
   SecureStorageService({FlutterSecureStorage? storage})
       : _storage = storage ??
@@ -91,12 +97,57 @@ class SecureStorageService {
     return val;
   }
 
+  Future<void> saveInstitutionDetails({
+    int? institutionId,
+    String? institutionCode,
+    String? institutionName,
+  }) async {
+    if (institutionId != null) {
+      _cachedInstitutionId = institutionId;
+      await _storage.write(key: _keyInstitutionId, value: institutionId.toString());
+    }
+    if (institutionCode != null) {
+      _cachedInstitutionCode = institutionCode;
+      await _storage.write(key: _keyInstitutionCode, value: institutionCode);
+    }
+    if (institutionName != null) {
+      _cachedInstitutionName = institutionName;
+      await _storage.write(key: _keyInstitutionName, value: institutionName);
+    }
+  }
+
+  Future<int?> getInstitutionId() async {
+    if (_cachedInstitutionId != null) return _cachedInstitutionId;
+    final val = await _storage.read(key: _keyInstitutionId);
+    if (val != null) {
+      _cachedInstitutionId = int.tryParse(val);
+    }
+    return _cachedInstitutionId;
+  }
+
+  Future<String?> getInstitutionCode() async {
+    if (_cachedInstitutionCode != null) return _cachedInstitutionCode;
+    final val = await _storage.read(key: _keyInstitutionCode);
+    if (val != null) _cachedInstitutionCode = val;
+    return val;
+  }
+
+  Future<String?> getInstitutionName() async {
+    if (_cachedInstitutionName != null) return _cachedInstitutionName;
+    final val = await _storage.read(key: _keyInstitutionName);
+    if (val != null) _cachedInstitutionName = val;
+    return val;
+  }
+
   Future<void> clearAll() async {
     _cachedAccessToken = null;
     _cachedRefreshToken = null;
     _cachedUserEmail = null;
     _cachedUserName = null;
     _cachedUserRole = null;
+    _cachedInstitutionId = null;
+    _cachedInstitutionCode = null;
+    _cachedInstitutionName = null;
     await _storage.deleteAll();
   }
 }

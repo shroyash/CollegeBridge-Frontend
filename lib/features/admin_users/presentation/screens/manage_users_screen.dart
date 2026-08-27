@@ -507,7 +507,7 @@ class _ManageUsersScreenState extends ConsumerState<ManageUsersScreen> {
                   icon: const Icon(Icons.bookmark_outline,
                       size: 16, color: Colors.white),
                   label: const Text(
-                    'Assign Classes',
+                    'Assign Subjects',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 12,

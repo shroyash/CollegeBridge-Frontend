@@ -6,6 +6,7 @@ import '../../domain/entities/faculty.dart';
 import '../../domain/usecases/login_usecase.dart';
 import '../../domain/usecases/register_usecase.dart';
 import 'auth_state.dart';
+import 'institution_provider.dart';
 
 /// StateNotifier for auth — orchestrates login/register flows.
 /// Saves tokens to SecureStorage on success.
@@ -13,14 +14,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
   final LoginUseCase _loginUseCase;
   final RegisterUseCase _registerUseCase;
   final SecureStorageService _storageService;
+  final Ref _ref;
 
   AuthNotifier({
     required LoginUseCase loginUseCase,
     required RegisterUseCase registerUseCase,
     required SecureStorageService storageService,
+    required Ref ref,
   })  : _loginUseCase = loginUseCase,
         _registerUseCase = registerUseCase,
         _storageService = storageService,
+        _ref = ref,
         super(const AuthInitial());
 
   Future<void> login({
@@ -42,6 +46,14 @@ class AuthNotifier extends StateNotifier<AuthState> {
       await _storageService.saveUserEmail(user.email);
       await _storageService.saveUserName(user.name);
       await _storageService.saveUserRole(user.role);
+      if (user.institution != null) {
+        await _storageService.saveInstitutionDetails(
+          institutionId: user.institution!.institutionId,
+          institutionCode: user.institution!.code,
+          institutionName: user.institution!.name,
+        );
+        _ref.read(currentInstitutionProvider.notifier).updateInstitution(user.institution);
+      }
       state = AuthSuccess(user);
     } on LoginFailureException catch (e) {
       // Typed reason-code failures from the backend
@@ -80,6 +92,14 @@ class AuthNotifier extends StateNotifier<AuthState> {
       await _storageService.saveUserEmail(user.email);
       await _storageService.saveUserName(user.name);
       await _storageService.saveUserRole(user.role);
+      if (user.institution != null) {
+        await _storageService.saveInstitutionDetails(
+          institutionId: user.institution!.institutionId,
+          institutionCode: user.institution!.code,
+          institutionName: user.institution!.name,
+        );
+        _ref.read(currentInstitutionProvider.notifier).updateInstitution(user.institution);
+      }
       state = AuthSuccess(user);
     } catch (e) {
       state = AuthFailure(e.toString().replaceFirst('Exception: ', ''));

@@ -431,7 +431,7 @@ class _ClassDetailsScreenState extends ConsumerState<ClassDetailsScreen>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                'ASSIGNED FACULTY & TEACHERS',
+                'ASSIGNED SUBJECT TEACHERS',
                 style: TextStyle(color: Color(0xFF64748B), fontSize: 12, fontWeight: FontWeight.bold),
               ),
               OutlinedButton.icon(
@@ -452,7 +452,7 @@ class _ClassDetailsScreenState extends ConsumerState<ClassDetailsScreen>
                     border: Border.all(color: const Color(0xFFE2E8F0)),
                   ),
                   child: const Text(
-                    'No subject teachers assigned to this faculty/semester yet.',
+                    'No subject teachers assigned to this class yet.',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Color(0xFF64748B)),
                   ),
