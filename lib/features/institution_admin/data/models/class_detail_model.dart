@@ -55,10 +55,10 @@ class ClassTeacherModel {
 }
 
 class ClassDetailModel {
-  final int classId;
+  final int levelId;
   final String displayName;
-  final String faculty;
-  final int semester;
+  final String levelName;
+  final String programName;
   final int totalStudents;
   final int? classTeacherId;
   final String? classTeacherName;
@@ -69,11 +69,16 @@ class ClassDetailModel {
   final List<ClassStudentModel> students;
   final List<ClassTeacherModel> teachers;
 
+  // Backwards compatibility getters
+  int get classId => levelId;
+  String get faculty => programName;
+  int get semester => 1;
+
   const ClassDetailModel({
-    required this.classId,
+    required this.levelId,
     required this.displayName,
-    required this.faculty,
-    required this.semester,
+    required this.levelName,
+    required this.programName,
     required this.totalStudents,
     this.classTeacherId,
     this.classTeacherName,
@@ -97,11 +102,15 @@ class ClassDetailModel {
             .toList() ??
         [];
 
+    final lId = (json['levelId'] ?? json['classId'] as num?)?.toInt() ?? 0;
+    final progName = json['programName'] ?? json['faculty'] as String? ?? '';
+    final lvlName = json['levelName'] ?? json['displayName'] as String? ?? '';
+
     return ClassDetailModel(
-      classId: (json['classId'] as num?)?.toInt() ?? 0,
-      displayName: json['displayName'] as String? ?? '',
-      faculty: json['faculty'] as String? ?? '',
-      semester: (json['semester'] as num?)?.toInt() ?? 1,
+      levelId: lId,
+      displayName: json['displayName'] as String? ?? lvlName,
+      levelName: lvlName,
+      programName: progName,
       totalStudents: (json['totalStudents'] as num?)?.toInt() ?? 0,
       classTeacherId: (json['classTeacherId'] as num?)?.toInt(),
       classTeacherName: json['classTeacherName'] as String?,

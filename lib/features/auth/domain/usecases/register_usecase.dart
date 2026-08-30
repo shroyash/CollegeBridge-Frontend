@@ -1,5 +1,4 @@
 import '../entities/auth_user.dart';
-import '../entities/faculty.dart';
 import '../repositories/auth_repository.dart';
 
 /// Single responsibility use-case: register a new student account.
@@ -13,16 +12,14 @@ class RegisterUseCase {
     required String name,
     required String email,
     required String password,
-    required Faculty faculty,
-    required int semester,
+    required int levelId,
   }) {
     return _repository.register(
       institutionCode: institutionCode,
       name: name,
       email: email,
       password: password,
-      faculty: faculty,
-      semester: semester,
+      levelId: levelId,
     );
   }
 }

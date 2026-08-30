@@ -14,10 +14,6 @@ import 'auth_state.dart';
 
 final apiClientProvider = Provider<ApiClient>((ref) => ApiClient());
 
-final secureStorageProvider = Provider<SecureStorageService>(
-  (ref) => SecureStorageService(),
-);
-
 // ── Data Layer ─────────────────────────────────────────────────────────────
 
 final authRemoteDataSourceProvider = Provider<AuthRemoteDataSource>((ref) {

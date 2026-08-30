@@ -11,13 +11,21 @@ import '../widgets/auth_button.dart';
 class OtpVerificationScreen extends ConsumerStatefulWidget {
   final String email;
   final VoidCallback onBack;
-  final void Function(String email, String verificationToken) onOtpVerified;
+  final void Function(String email, String verificationToken)? onOtpVerified;
+  final Future<void> Function(WidgetRef ref, String otp)? onVerifyCustom;
+  final Future<void> Function(WidgetRef ref)? onResendCustom;
+  final String title;
+  final String subtitle;
 
   const OtpVerificationScreen({
     super.key,
     required this.email,
     required this.onBack,
-    required this.onOtpVerified,
+    this.onOtpVerified,
+    this.onVerifyCustom,
+    this.onResendCustom,
+    this.title = 'Verify Email',
+    this.subtitle = 'Please enter the 6-digit code sent to your email\naddress ',
   });
 
   @override
@@ -40,6 +48,7 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen>
 
   int _resendCountdown = _resendSeconds;
   Timer? _resendTimer;
+  bool _isCustomLoading = false;
 
   @override
   void initState() {
@@ -83,7 +92,7 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen>
 
   bool get _isOtpComplete => _otp.length == _otpLength;
 
-  void _onVerify() {
+  void _onVerify() async {
     if (!_isOtpComplete) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -95,14 +104,67 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen>
       );
       return;
     }
+
+    if (widget.onVerifyCustom != null) {
+      setState(() => _isCustomLoading = true);
+      try {
+        await widget.onVerifyCustom!(ref, _otp);
+      } catch (e) {
+        if (mounted) {
+          final msg = e.toString().replaceAll('Exception: ', '');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(msg),
+              backgroundColor: const Color(0xFFEF4444),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+          );
+        }
+      } finally {
+        if (mounted) setState(() => _isCustomLoading = false);
+      }
+      return;
+    }
+
     ref.read(forgotPasswordNotifierProvider.notifier).verifyOtp(
           email: widget.email,
           code: _otp,
         );
   }
 
-  void _onResend() {
+  void _onResend() async {
     if (_resendCountdown > 0) return;
+    if (widget.onResendCustom != null) {
+      try {
+        await widget.onResendCustom!(ref);
+        _startResendTimer();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Code resent successfully!'),
+              backgroundColor: const Color(0xFF10B981),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          final msg = e.toString().replaceAll('Exception: ', '');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to resend code: $msg'),
+              backgroundColor: const Color(0xFFEF4444),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+          );
+        }
+      }
+      return;
+    }
+
     ref
         .read(forgotPasswordNotifierProvider.notifier)
         .sendOtp(email: widget.email);
@@ -111,38 +173,39 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen>
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<ForgotPasswordState>(forgotPasswordNotifierProvider, (_, next) {
-      if (next is ForgotPasswordOtpVerified) {
-        widget.onOtpVerified(next.email, next.verificationToken);
-        ref.read(forgotPasswordNotifierProvider.notifier).reset();
-      } else if (next is ForgotPasswordOtpSent) {
-        // OTP resent — just restart the timer (already done in _onResend)
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Code resent successfully!'),
-            backgroundColor: const Color(0xFF10B981),
-            behavior: SnackBarBehavior.floating,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
-        );
-        ref.read(forgotPasswordNotifierProvider.notifier).reset();
-      } else if (next is ForgotPasswordFailure) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(next.message),
-            backgroundColor: const Color(0xFFEF4444),
-            behavior: SnackBarBehavior.floating,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
-        );
-        ref.read(forgotPasswordNotifierProvider.notifier).reset();
-      }
-    });
+    if (widget.onVerifyCustom == null) {
+      ref.listen<ForgotPasswordState>(forgotPasswordNotifierProvider, (_, next) {
+        if (next is ForgotPasswordOtpVerified) {
+          widget.onOtpVerified?.call(next.email, next.verificationToken);
+          ref.read(forgotPasswordNotifierProvider.notifier).reset();
+        } else if (next is ForgotPasswordOtpSent) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Code resent successfully!'),
+              backgroundColor: const Color(0xFF10B981),
+              behavior: SnackBarBehavior.floating,
+              shape:
+                  RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+          );
+          ref.read(forgotPasswordNotifierProvider.notifier).reset();
+        } else if (next is ForgotPasswordFailure) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(next.message),
+              backgroundColor: const Color(0xFFEF4444),
+              behavior: SnackBarBehavior.floating,
+              shape:
+                  RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+          );
+          ref.read(forgotPasswordNotifierProvider.notifier).reset();
+        }
+      });
+    }
 
     final state = ref.watch(forgotPasswordNotifierProvider);
-    final isLoading = state is ForgotPasswordLoading;
+    final isLoading = _isCustomLoading || (widget.onVerifyCustom == null && state is ForgotPasswordLoading);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -185,9 +248,9 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen>
               const SizedBox(height: 36),
 
               // ── Heading ──
-              const Text(
-                'Verify Email',
-                style: TextStyle(
+              Text(
+                widget.title,
+                style: const TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.w800,
                   color: Color(0xFF0F172A),
@@ -203,8 +266,7 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen>
                     height: 1.5,
                   ),
                   children: [
-                    const TextSpan(
-                        text: 'Please enter the 6-digit code sent to your email\naddress '),
+                    TextSpan(text: widget.subtitle),
                     TextSpan(
                       text: widget.email,
                       style: const TextStyle(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../admin_users/presentation/controllers/manage_users_providers.dart';
+import '../../../dashboard/presentation/controllers/dashboard_providers.dart';
 
 class TeacherRegistrationDialog extends ConsumerStatefulWidget {
   const TeacherRegistrationDialog({super.key});
@@ -38,6 +39,7 @@ class _TeacherRegistrationDialogState extends ConsumerState<TeacherRegistrationD
       );
 
       if (mounted) {
+        ref.read(adminDashboardNotifierProvider.notifier).fetchDashboard();
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

@@ -170,6 +170,29 @@ class SuperAdminInstitution {
   }
 }
 
+class PendingDocument {
+  final int documentId;
+  final String documentUrl;
+  final String documentType;
+  final String? uploadedAt;
+
+  PendingDocument({
+    required this.documentId,
+    required this.documentUrl,
+    required this.documentType,
+    this.uploadedAt,
+  });
+
+  factory PendingDocument.fromJson(Map<String, dynamic> json) {
+    return PendingDocument(
+      documentId: json['documentId'] ?? 0,
+      documentUrl: json['documentUrl'] ?? '',
+      documentType: json['documentType'] ?? 'DOCUMENT',
+      uploadedAt: json['uploadedAt'],
+    );
+  }
+}
+
 class SuperAdminPendingInstitution {
   final int institutionId;
   final String institutionName;
@@ -183,6 +206,7 @@ class SuperAdminPendingInstitution {
   final int totalStudents;
   final int totalTeachers;
   final String? submittedAt;
+  final List<PendingDocument> documents;
 
   SuperAdminPendingInstitution({
     required this.institutionId,
@@ -197,9 +221,11 @@ class SuperAdminPendingInstitution {
     required this.totalStudents,
     required this.totalTeachers,
     this.submittedAt,
+    this.documents = const [],
   });
 
   factory SuperAdminPendingInstitution.fromJson(Map<String, dynamic> json) {
+    final rawDocs = json['documents'] as List? ?? [];
     return SuperAdminPendingInstitution(
       institutionId: json['institutionId'] ?? 0,
       institutionName: json['institutionName'] ?? json['name'] ?? '',
@@ -213,6 +239,7 @@ class SuperAdminPendingInstitution {
       totalStudents: json['totalStudents'] ?? 0,
       totalTeachers: json['totalTeachers'] ?? 0,
       submittedAt: json['submittedAt'] ?? json['createdAt'],
+      documents: rawDocs.map((d) => PendingDocument.fromJson(d as Map<String, dynamic>)).toList(),
     );
   }
 }

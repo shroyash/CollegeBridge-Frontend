@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../dashboard/domain/entities/subject.dart';
+import '../../domain/entities/academic_level.dart';
+import '../../domain/entities/academic_program.dart';
 import '../controllers/academic_management_providers.dart';
 import '../controllers/academic_management_state.dart';
-import '../../domain/entities/academic_class.dart';
-
 
 class AcademicManagementScreen extends ConsumerStatefulWidget {
   const AcademicManagementScreen({super.key});
@@ -54,17 +55,6 @@ class _AcademicManagementScreenState
       },
     );
 
-    // Find current configured AcademicClass for selected Faculty & Sem
-    final currentAcademicClass = state.academicClasses.firstWhere(
-      (c) => c.faculty == state.selectedFaculty && c.semester == state.selectedSemester,
-      orElse: () => AcademicClass(
-        classId: -1,
-        faculty: state.selectedFaculty,
-        semester: state.selectedSemester,
-        displayName: '${state.selectedFaculty} ${_getOrdinal(state.selectedSemester)} Semester',
-      ),
-    );
-
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
@@ -75,27 +65,25 @@ class _AcademicManagementScreenState
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
-          'Academic & Subjects',
+          'Academic Structure & Curriculum',
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
-            fontSize: 20,
+            fontSize: 18,
           ),
         ),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: Colors.white),
             onPressed: () {
-              ref
-                  .read(academicManagementNotifierProvider.notifier)
-                  .loadAcademicData();
+              ref.read(academicManagementNotifierProvider.notifier).init();
             },
           )
         ],
       ),
       body: Column(
         children: [
-          // Faculty Selection Tabs Header with "+ Add Faculty" option
+          // ── Program Selector Header ──
           Container(
             color: const Color(0xFF1E40AF),
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -103,7 +91,7 @@ class _AcademicManagementScreenState
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'SELECT FACULTY',
+                  'ACADEMIC PROGRAMS',
                   style: TextStyle(
                     color: Color(0xFF93C5FD),
                     fontSize: 11,
@@ -116,46 +104,39 @@ class _AcademicManagementScreenState
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: [
-                      ...state.supportedFaculties.map((fac) {
-                        final isSelected = state.selectedFaculty == fac;
+                      ...state.programs.map((prog) {
+                        final isSelected = state.selectedProgram?.programId == prog.programId;
                         return Padding(
                           padding: const EdgeInsets.only(right: 8),
                           child: ChoiceChip(
-                            label: Text(fac),
+                            label: Text('${prog.name} (${prog.code})'),
                             selected: isSelected,
                             selectedColor: Colors.white,
                             backgroundColor: const Color(0xFF1D4ED8),
                             labelStyle: TextStyle(
-                              color: isSelected
-                                  ? const Color(0xFF1E40AF)
-                                  : Colors.white,
+                              color: isSelected ? const Color(0xFF1E40AF) : Colors.white,
                               fontWeight: FontWeight.bold,
                             ),
                             onSelected: (selected) {
                               if (selected) {
                                 ref
-                                    .read(
-                                        academicManagementNotifierProvider.notifier)
-                                    .selectFaculty(fac);
+                                    .read(academicManagementNotifierProvider.notifier)
+                                    .selectProgram(prog);
                               }
                             },
                           ),
                         );
                       }),
-                      // Add Custom Faculty Button Chip
                       Padding(
                         padding: const EdgeInsets.only(right: 8),
                         child: ActionChip(
                           avatar: const Icon(Icons.add, size: 16, color: Colors.white),
                           label: const Text(
-                            'Add Faculty',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
+                            'Add Program',
+                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                           ),
                           backgroundColor: const Color(0xFF2563EB),
-                          onPressed: () => _showAddCustomFacultyDialog(context),
+                          onPressed: () => _showAddProgramDialog(context),
                         ),
                       ),
                     ],
@@ -165,8 +146,8 @@ class _AcademicManagementScreenState
             ),
           ),
 
-          // Semester Selector Strip & Content — only show when faculties exist
-          if (state.supportedFaculties.isEmpty && !state.isLoading) ...[
+          // ── Empty State if no programs ──
+          if (state.programs.isEmpty && !state.isLoading) ...[
             Expanded(
               child: Center(
                 child: Padding(
@@ -177,24 +158,24 @@ class _AcademicManagementScreenState
                       const Icon(Icons.school_outlined, size: 72, color: Color(0xFF94A3B8)),
                       const SizedBox(height: 20),
                       const Text(
-                        'No Faculties Configured',
+                        'No Programs Configured',
                         style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
                       ),
                       const SizedBox(height: 8),
                       const Text(
-                        'Add your first faculty/program to start configuring semesters and subjects.',
+                        'Add your institution\'s academic programs (e.g. BCA, BBA, BSC_CSIT) to start managing curriculum levels and subjects.',
                         textAlign: TextAlign.center,
                         style: TextStyle(fontSize: 14, color: Color(0xFF64748B)),
                       ),
                       const SizedBox(height: 24),
                       ElevatedButton.icon(
-                        onPressed: () => _showAddCustomFacultyDialog(context),
+                        onPressed: () => _showAddProgramDialog(context),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF2563EB),
                           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                         ),
                         icon: const Icon(Icons.add, color: Colors.white),
-                        label: const Text('Add First Faculty', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        label: const Text('Add First Program', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                       ),
                     ],
                   ),
@@ -202,15 +183,13 @@ class _AcademicManagementScreenState
               ),
             ),
           ] else ...[
-            // Semester Selector Strip
-            if (state.selectedFaculty.isNotEmpty)
+            // ── Level Selector Strip ──
+            if (state.selectedProgram != null)
               Container(
                 padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                 decoration: const BoxDecoration(
                   color: Colors.white,
-                  border: Border(
-                    bottom: BorderSide(color: Color(0xFFE2E8F0)),
-                  ),
+                  border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -219,7 +198,7 @@ class _AcademicManagementScreenState
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          '${state.selectedFaculty} SEMESTERS',
+                          '${state.selectedProgram!.name} LEVELS',
                           style: const TextStyle(
                             color: Color(0xFF64748B),
                             fontSize: 12,
@@ -228,14 +207,13 @@ class _AcademicManagementScreenState
                           ),
                         ),
                         InkWell(
-                          onTap: () => _showAddClassDialog(context, state),
+                          onTap: () => _showAddLevelDialog(context, state.selectedProgram!),
                           child: const Row(
                             children: [
-                              Icon(Icons.add_circle_outline,
-                                  size: 16, color: Color(0xFF2563EB)),
+                              Icon(Icons.add_circle_outline, size: 16, color: Color(0xFF2563EB)),
                               SizedBox(width: 4),
                               Text(
-                                'Add Semester',
+                                'Add Level',
                                 style: TextStyle(
                                   color: Color(0xFF2563EB),
                                   fontSize: 12,
@@ -248,200 +226,182 @@ class _AcademicManagementScreenState
                       ],
                     ),
                     const SizedBox(height: 8),
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: List.generate(8, (index) {
-                          final sem = index + 1;
-                          final isSelected = state.selectedSemester == sem;
-                          final isConfigured = state.academicClasses
-                              .any((c) => c.faculty == state.selectedFaculty && c.semester == sem);
-
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: FilterChip(
-                              avatar: isConfigured
-                                  ? Icon(
-                                      Icons.check_circle,
-                                      size: 16,
-                                      color: isSelected ? Colors.white : const Color(0xFF16A34A),
-                                    )
-                                  : null,
-                              label: Text('Sem $sem'),
-                              selected: isSelected,
-                              selectedColor: const Color(0xFF2563EB),
-                              backgroundColor: const Color(0xFFF1F5F9),
-                              labelStyle: TextStyle(
-                                color: isSelected ? Colors.white : const Color(0xFF334155),
-                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    if (state.loadingLevels)
+                      const SizedBox(
+                        height: 36,
+                        child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                      )
+                    else if (state.levels.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 8),
+                        child: Text('No levels created yet for this program.', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13)),
+                      )
+                    else
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: state.levels.map((lvl) {
+                            final isSelected = state.selectedLevel?.levelId == lvl.levelId;
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: FilterChip(
+                                label: Text(lvl.name),
+                                selected: isSelected,
+                                selectedColor: const Color(0xFF2563EB),
+                                backgroundColor: const Color(0xFFF1F5F9),
+                                labelStyle: TextStyle(
+                                  color: isSelected ? Colors.white : const Color(0xFF334155),
+                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                ),
+                                onSelected: (selected) {
+                                  if (selected) {
+                                    ref
+                                        .read(academicManagementNotifierProvider.notifier)
+                                        .selectLevel(lvl);
+                                  }
+                                },
                               ),
-                              onSelected: (selected) {
-                                if (selected) {
-                                  ref
-                                      .read(academicManagementNotifierProvider.notifier)
-                                      .selectSemester(sem);
-                                }
-                              },
-                            ),
-                          );
-                        }),
+                            );
+                          }).toList(),
+                        ),
                       ),
-                    ),
                   ],
                 ),
               ),
 
-          // Main Subject Directory Body
-          Expanded(
-            child: state.isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : SingleChildScrollView(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Overview Card for Selected Faculty & Sem
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFF2563EB).withValues(alpha: 0.2),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              )
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            // ── Main Subject Directory Body ──
+            Expanded(
+              child: state.isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : state.selectedLevel == null
+                      ? const Center(child: Text('Select or create a level to view subjects.', style: TextStyle(color: Color(0xFF64748B))))
+                      : SingleChildScrollView(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                              // Overview Banner
+                              Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            currentAcademicClass.displayName,
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            state.selectedLevel!.name,
                                             style: const TextStyle(
                                               color: Colors.white,
-                                              fontSize: 17,
+                                              fontSize: 18,
                                               fontWeight: FontWeight.bold,
                                             ),
                                           ),
-                                        ),
-                                        if (currentAcademicClass.classId != -1)
-                                          IconButton(
-                                            icon: const Icon(Icons.edit_note, color: Colors.white, size: 22),
-                                            tooltip: 'Edit Class Name',
-                                            onPressed: () => _showEditClassDialog(context, state, currentAcademicClass),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            '${state.selectedProgram!.name} • ${state.subjects.length} Subject(s)',
+                                            style: const TextStyle(
+                                              color: Color(0xFFDBEAFE),
+                                              fontSize: 13,
+                                            ),
                                           ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      '${state.selectedFaculty} • Semester ${state.selectedSemester} (${state.subjects.length} Subjects)',
-                                      style: const TextStyle(
-                                        color: Color(0xFFDBEAFE),
-                                        fontSize: 13,
+                                        ],
                                       ),
+                                    ),
+                                    PopupMenuButton<String>(
+                                      icon: const Icon(Icons.add, color: Colors.white, size: 28),
+                                      tooltip: 'Add Options',
+                                      onSelected: (value) {
+                                        if (value == 'single') {
+                                          _showAddSubjectDialog(context);
+                                        } else if (value == 'batch') {
+                                          _showBatchAddSubjectDialog(context);
+                                        }
+                                      },
+                                      itemBuilder: (context) => [
+                                        const PopupMenuItem(
+                                          value: 'single',
+                                          child: Row(
+                                            children: [
+                                              Icon(Icons.add_box, color: Color(0xFF2563EB)),
+                                              SizedBox(width: 8),
+                                              Text('Add Single Subject'),
+                                            ],
+                                          ),
+                                        ),
+                                        const PopupMenuItem(
+                                          value: 'batch',
+                                          child: Row(
+                                            children: [
+                                              Icon(Icons.library_add, color: Color(0xFF16A34A)),
+                                              SizedBox(width: 8),
+                                              Text('Batch Add Subjects'),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
                               ),
-                              PopupMenuButton<String>(
-                                icon: const Icon(Icons.add, color: Colors.white, size: 28),
-                                tooltip: 'Add Options',
-                                onSelected: (value) {
-                                  if (value == 'single') {
-                                    _showAddSubjectDialog(context, state);
-                                  } else if (value == 'batch') {
-                                    _showBatchAddSubjectDialog(context, state);
-                                  }
-                                },
-                                itemBuilder: (context) => [
-                                  const PopupMenuItem(
-                                    value: 'single',
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.add_box, color: Color(0xFF2563EB)),
-                                        SizedBox(width: 8),
-                                        Text('Add Single Subject'),
-                                      ],
+                              const SizedBox(height: 24),
+
+                              // Section Header
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    'CURRICULUM SUBJECTS',
+                                    style: TextStyle(
+                                      color: Color(0xFF64748B),
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 0.5,
                                     ),
                                   ),
-                                  const PopupMenuItem(
-                                    value: 'batch',
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.library_add, color: Color(0xFF16A34A)),
-                                        SizedBox(width: 8),
-                                        Text('Batch Add Subjects'),
-                                      ],
+                                  Text(
+                                    '${state.subjects.length} item(s)',
+                                    style: const TextStyle(
+                                      color: Color(0xFF94A3B8),
+                                      fontSize: 12,
                                     ),
                                   ),
                                 ],
                               ),
+                              const SizedBox(height: 12),
+
+                              // Subjects List
+                              state.subjects.isEmpty
+                                  ? _buildEmptySubjectState(context)
+                                  : ListView.separated(
+                                      shrinkWrap: true,
+                                      physics: const NeverScrollableScrollPhysics(),
+                                      itemCount: state.subjects.length,
+                                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                                      itemBuilder: (context, index) {
+                                        final subject = state.subjects[index];
+                                        return _buildSubjectCard(context, subject);
+                                      },
+                                    ),
                             ],
                           ),
                         ),
-                        const SizedBox(height: 24),
-
-                        // Section Title
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              'CURRICULUM SUBJECTS',
-                              style: TextStyle(
-                                color: Color(0xFF64748B),
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                            Text(
-                              '${state.subjects.length} item(s)',
-                              style: const TextStyle(
-                                color: Color(0xFF94A3B8),
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-
-                        // Subjects List
-                        state.subjects.isEmpty
-                            ? _buildEmptySubjectState(context, state)
-                            : ListView.separated(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                itemCount: state.subjects.length,
-                                separatorBuilder: (_, __) =>
-                                    const SizedBox(height: 12),
-                                itemBuilder: (context, index) {
-                                  final subject = state.subjects[index];
-                                  return _buildSubjectCard(context, state, subject);
-                                },
-                              ),
-                      ],
-                    ),
-                  ),
-          ),
-          ], // end of else block
+            ),
+          ],
         ],
       ),
-      floatingActionButton: state.supportedFaculties.isNotEmpty
+      floatingActionButton: state.selectedLevel != null
           ? FloatingActionButton.extended(
-              onPressed: () => _showAddSubjectDialog(context, state),
+              onPressed: () => _showAddSubjectDialog(context),
               backgroundColor: const Color(0xFF2563EB),
               icon: const Icon(Icons.add, color: Colors.white),
               label: const Text('Add Subject', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
@@ -450,7 +410,7 @@ class _AcademicManagementScreenState
     );
   }
 
-  Widget _buildEmptySubjectState(BuildContext context, AcademicManagementState state) {
+  Widget _buildEmptySubjectState(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
@@ -460,45 +420,32 @@ class _AcademicManagementScreenState
       ),
       child: Column(
         children: [
-          const Icon(
-            Icons.menu_book_outlined,
-            size: 56,
-            color: Color(0xFF94A3B8),
-          ),
+          const Icon(Icons.menu_book_outlined, size: 56, color: Color(0xFF94A3B8)),
           const SizedBox(height: 16),
-          Text(
-            'No subjects added for ${state.selectedFaculty} Sem ${state.selectedSemester}',
+          const Text(
+            'No subjects added for this level',
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF334155),
-            ),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF334155)),
           ),
           const SizedBox(height: 8),
           const Text(
-            'Add subjects individually or batch-import the semester curriculum.',
+            'Add subjects individually or batch-import the curriculum.',
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 13,
-              color: Color(0xFF64748B),
-            ),
+            style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
           ),
           const SizedBox(height: 20),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               OutlinedButton.icon(
-                onPressed: () => _showAddSubjectDialog(context, state),
+                onPressed: () => _showAddSubjectDialog(context),
                 icon: const Icon(Icons.add, size: 18),
                 label: const Text('Add Subject'),
               ),
               const SizedBox(width: 12),
               ElevatedButton.icon(
-                onPressed: () => _showBatchAddSubjectDialog(context, state),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2563EB),
-                ),
+                onPressed: () => _showBatchAddSubjectDialog(context),
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2563EB)),
                 icon: const Icon(Icons.library_add, size: 18, color: Colors.white),
                 label: const Text('Batch Add', style: TextStyle(color: Colors.white)),
               ),
@@ -509,20 +456,13 @@ class _AcademicManagementScreenState
     );
   }
 
-  Widget _buildSubjectCard(BuildContext context, AcademicManagementState state, dynamic subject) {
+  Widget _buildSubjectCard(BuildContext context, Subject subject) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          )
-        ],
       ),
       child: Row(
         children: [
@@ -532,11 +472,7 @@ class _AcademicManagementScreenState
               color: const Color(0xFFEFF6FF),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(
-              Icons.book_outlined,
-              color: Color(0xFF2563EB),
-              size: 22,
-            ),
+            child: const Icon(Icons.book_outlined, color: Color(0xFF2563EB), size: 22),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -545,37 +481,34 @@ class _AcademicManagementScreenState
               children: [
                 Text(
                   subject.name,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1E293B),
-                  ),
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
                 ),
                 const SizedBox(height: 4),
                 Row(
                   children: [
+                    if (subject.code != null && subject.code!.isNotEmpty) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFDBEAFE),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          subject.code!,
+                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF1E40AF)),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 2),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
                         color: const Color(0xFFF1F5F9),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
                         '${subject.creditHours} Credit Hrs',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF475569),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '${subject.faculty} - Sem ${subject.semester}',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF64748B),
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF475569)),
                       ),
                     ),
                   ],
@@ -585,12 +518,10 @@ class _AcademicManagementScreenState
           ),
           IconButton(
             icon: const Icon(Icons.edit_outlined, color: Color(0xFF2563EB)),
-            tooltip: 'Edit Subject',
-            onPressed: () => _showEditSubjectDialog(context, state, subject),
+            onPressed: () => _showEditSubjectDialog(context, subject),
           ),
           IconButton(
             icon: const Icon(Icons.delete_outline, color: Color(0xFFDC2626)),
-            tooltip: 'Delete Subject',
             onPressed: () => _confirmDeleteSubject(context, subject),
           ),
         ],
@@ -598,142 +529,113 @@ class _AcademicManagementScreenState
     );
   }
 
-  void _showAddCustomFacultyDialog(BuildContext context) {
-    final facultyController = TextEditingController();
+  void _showAddProgramDialog(BuildContext context) {
+    final nameController = TextEditingController();
+    final codeController = TextEditingController();
 
     showDialog(
       context: context,
       builder: (dialogCtx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Add Custom Faculty / Program', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text('Add Academic Program', style: TextStyle(fontWeight: FontWeight.bold)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Enter program code (e.g. BIT, BE_CIVIL, BSW, BHM):',
-              style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(labelText: 'Program Name', hintText: 'e.g. Bachelor of Computer Application'),
             ),
             const SizedBox(height: 12),
             TextField(
-              controller: facultyController,
-              autofocus: true,
+              controller: codeController,
               textCapitalization: TextCapitalization.characters,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                hintText: 'e.g. BIT',
-              ),
+              decoration: const InputDecoration(labelText: 'Program Code', hintText: 'e.g. BCA'),
             ),
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx),
-            child: const Text('Cancel'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(dialogCtx), child: const Text('Cancel')),
           ElevatedButton(
-            onPressed: () {
-              final code = facultyController.text.trim();
-              if (code.isNotEmpty) {
-                ref
+            onPressed: () async {
+              final name = nameController.text.trim();
+              final code = codeController.text.trim().toUpperCase();
+              if (name.isNotEmpty && code.isNotEmpty) {
+                final success = await ref
                     .read(academicManagementNotifierProvider.notifier)
-                    .addCustomFaculty(code);
-                Navigator.pop(dialogCtx);
+                    .createProgram(name: name, code: code);
+                if (success && context.mounted) Navigator.pop(dialogCtx);
               }
             },
             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2563EB)),
-            child: const Text('Add Program', style: TextStyle(color: Colors.white)),
+            child: const Text('Create Program', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
     );
   }
 
-  void _showAddClassDialog(BuildContext context, AcademicManagementState state) {
-    int selectedSem = state.selectedSemester;
-    final nameController = TextEditingController(
-      text: '${state.selectedFaculty} ${_getOrdinal(selectedSem)} Semester',
-    );
+  void _showAddLevelDialog(BuildContext context, AcademicProgram program) {
+    final numController = TextEditingController(text: '1');
+    final nameController = TextEditingController(text: 'Semester 1');
+    String levelType = 'SEMESTER';
 
     showDialog(
       context: context,
       builder: (dialogCtx) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Text(
-            'Add Academic Class (${state.selectedFaculty})',
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
+          title: Text('Add Level to ${program.code}', style: const TextStyle(fontWeight: FontWeight.bold)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Select Semester:'),
-              const SizedBox(height: 8),
-              DropdownButtonFormField<int>(
-                initialValue: selectedSem,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                ),
-                items: List.generate(
-                  8,
-                  (index) => DropdownMenuItem(
-                    value: index + 1,
-                    child: Text('Semester ${index + 1}'),
-                  ),
-                ),
+              DropdownButtonFormField<String>(
+                value: levelType,
+                decoration: const InputDecoration(labelText: 'Level Type'),
+                items: const [
+                  DropdownMenuItem(value: 'SEMESTER', child: Text('Semester')),
+                  DropdownMenuItem(value: 'YEAR', child: Text('Year')),
+                  DropdownMenuItem(value: 'GRADE', child: Text('Grade')),
+                ],
                 onChanged: (val) {
-                  if (val != null) {
-                    setDialogState(() {
-                      selectedSem = val;
-                      nameController.text =
-                          '${state.selectedFaculty} ${_getOrdinal(selectedSem)} Semester';
-                    });
-                  }
+                  if (val != null) setDialogState(() => levelType = val);
                 },
               ),
-              const SizedBox(height: 16),
-              const Text('Display Name:'),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
+              TextField(
+                controller: numController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Level Number', hintText: 'e.g. 1'),
+                onChanged: (val) {
+                  final num = int.tryParse(val) ?? 1;
+                  nameController.text = levelType == 'SEMESTER' ? 'Semester $num' : 'Year $num';
+                },
+              ),
+              const SizedBox(height: 12),
               TextField(
                 controller: nameController,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  hintText: 'e.g. BCA First Semester',
-                ),
+                decoration: const InputDecoration(labelText: 'Level Name', hintText: 'e.g. First Semester'),
               ),
             ],
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogCtx),
-              child: const Text('Cancel'),
-            ),
+            TextButton(onPressed: () => Navigator.pop(dialogCtx), child: const Text('Cancel')),
             ElevatedButton(
-              onPressed: state.isSubmitting
-                  ? null
-                  : () async {
-                      final success = await ref
-                          .read(academicManagementNotifierProvider.notifier)
-                          .createAcademicClass(
-                            semester: selectedSem,
-                            displayName: nameController.text.trim(),
-                          );
-                      if (success && context.mounted) {
-                        Navigator.pop(dialogCtx);
-                      }
-                    },
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2563EB)),
-              child: state.isSubmitting
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white),
-                    )
-                  : const Text('Create Class', style: TextStyle(color: Colors.white)),
+              onPressed: () async {
+                final levelNum = int.tryParse(numController.text.trim()) ?? 1;
+                final name = nameController.text.trim();
+                final success = await ref
+                    .read(academicManagementNotifierProvider.notifier)
+                    .createLevel(
+                      programId: program.programId,
+                      levelNumber: levelNum,
+                      name: name,
+                      type: levelType,
+                    );
+                if (success && context.mounted) Navigator.pop(dialogCtx);
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2563EB)),
+              child: const Text('Create Level', style: TextStyle(color: Colors.white)),
             ),
           ],
         ),
@@ -741,354 +643,176 @@ class _AcademicManagementScreenState
     );
   }
 
-  void _showEditClassDialog(BuildContext context, AcademicManagementState state, AcademicClass academicClass) {
-    final nameController = TextEditingController(text: academicClass.displayName);
+  void _showAddSubjectDialog(BuildContext context) {
+    final nameController = TextEditingController();
+    final codeController = TextEditingController();
+    final creditController = TextEditingController(text: '3');
 
     showDialog(
       context: context,
       builder: (dialogCtx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-          'Edit Class (${academicClass.faculty} Sem ${academicClass.semester})',
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
+        title: const Text('Add Subject', style: TextStyle(fontWeight: FontWeight.bold)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Class Display Name:'),
-            const SizedBox(height: 8),
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                hintText: 'e.g. BCA First Semester Section A',
-              ),
-            ),
+            TextField(controller: nameController, decoration: const InputDecoration(labelText: 'Subject Name')),
+            const SizedBox(height: 12),
+            TextField(controller: codeController, decoration: const InputDecoration(labelText: 'Subject Code (Optional)')),
+            const SizedBox(height: 12),
+            TextField(controller: creditController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Credit Hours')),
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx),
-            child: const Text('Cancel'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(dialogCtx), child: const Text('Cancel')),
           ElevatedButton(
-            onPressed: state.isSubmitting
-                ? null
-                : () async {
-                    final newName = nameController.text.trim();
-                    if (newName.isEmpty) return;
-
-                    final success = await ref
-                        .read(academicManagementNotifierProvider.notifier)
-                        .updateAcademicClass(
-                          classId: academicClass.classId,
-                          semester: academicClass.semester,
-                          displayName: newName,
-                        );
-                    if (success && context.mounted) {
-                      Navigator.pop(dialogCtx);
-                    }
-                  },
+            onPressed: () async {
+              final name = nameController.text.trim();
+              final code = codeController.text.trim();
+              final credits = int.tryParse(creditController.text.trim()) ?? 3;
+              if (name.isNotEmpty) {
+                final success = await ref
+                    .read(academicManagementNotifierProvider.notifier)
+                    .createSubject(name: name, code: code.isNotEmpty ? code : null, creditHours: credits);
+                if (success && context.mounted) Navigator.pop(dialogCtx);
+              }
+            },
             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2563EB)),
-            child: state.isSubmitting
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                  )
-                : const Text('Save Changes', style: TextStyle(color: Colors.white)),
+            child: const Text('Add Subject', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
     );
   }
 
-  void _showAddSubjectDialog(BuildContext context, AcademicManagementState state) {
-    final nameController = TextEditingController();
-    int creditHours = 3;
-
-    showDialog(
-      context: context,
-      builder: (dialogCtx) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Text(
-            'Add Subject (${state.selectedFaculty} Sem ${state.selectedSemester})',
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Subject Name:'),
-              const SizedBox(height: 8),
-              TextField(
-                controller: nameController,
-                autofocus: true,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  hintText: 'e.g. Mobile Application Development',
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text('Credit Hours:'),
-              const SizedBox(height: 8),
-              DropdownButtonFormField<int>(
-                initialValue: creditHours,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                ),
-                items: [1, 2, 3, 4, 5, 6]
-                    .map((ch) => DropdownMenuItem(
-                          value: ch,
-                          child: Text('$ch Credit Hours'),
-                        ))
-                    .toList(),
-                onChanged: (val) {
-                  if (val != null) {
-                    setDialogState(() => creditHours = val);
-                  }
-                },
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogCtx),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: state.isSubmitting
-                  ? null
-                  : () async {
-                      final name = nameController.text.trim();
-                      if (name.isEmpty) return;
-
-                      final success = await ref
-                          .read(academicManagementNotifierProvider.notifier)
-                          .createSubject(
-                            name: name,
-                            creditHours: creditHours,
-                          );
-                      if (success && context.mounted) {
-                        Navigator.pop(dialogCtx);
-                      }
-                    },
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2563EB)),
-              child: state.isSubmitting
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white),
-                    )
-                  : const Text('Add Subject', style: TextStyle(color: Colors.white)),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showEditSubjectDialog(BuildContext context, AcademicManagementState state, dynamic subject) {
+  void _showEditSubjectDialog(BuildContext context, Subject subject) {
     final nameController = TextEditingController(text: subject.name);
-    int creditHours = subject.creditHours;
-
-    showDialog(
-      context: context,
-      builder: (dialogCtx) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Text(
-            'Edit Subject (${subject.faculty} Sem ${subject.semester})',
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Subject Name:'),
-              const SizedBox(height: 8),
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  hintText: 'Subject Name',
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text('Credit Hours:'),
-              const SizedBox(height: 8),
-              DropdownButtonFormField<int>(
-                initialValue: creditHours,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                ),
-                items: [1, 2, 3, 4, 5, 6]
-                    .map((ch) => DropdownMenuItem(
-                          value: ch,
-                          child: Text('$ch Credit Hours'),
-                        ))
-                    .toList(),
-                onChanged: (val) {
-                  if (val != null) {
-                    setDialogState(() => creditHours = val);
-                  }
-                },
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogCtx),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: state.isSubmitting
-                  ? null
-                  : () async {
-                      final name = nameController.text.trim();
-                      if (name.isEmpty) return;
-
-                      final success = await ref
-                          .read(academicManagementNotifierProvider.notifier)
-                          .updateSubject(
-                            subjectId: subject.subjectId,
-                            name: name,
-                            creditHours: creditHours,
-                          );
-                      if (success && context.mounted) {
-                        Navigator.pop(dialogCtx);
-                      }
-                    },
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2563EB)),
-              child: state.isSubmitting
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                    )
-                  : const Text('Save Changes', style: TextStyle(color: Colors.white)),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showBatchAddSubjectDialog(BuildContext context, AcademicManagementState state) {
-    final batchTextController = TextEditingController();
+    final codeController = TextEditingController(text: subject.code ?? '');
+    final creditController = TextEditingController(text: subject.creditHours.toString());
 
     showDialog(
       context: context,
       builder: (dialogCtx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-          'Batch Add Subjects (${state.selectedFaculty} Sem ${state.selectedSemester})',
-          style: const TextStyle(fontWeight: FontWeight.bold),
+        title: const Text('Edit Subject', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(controller: nameController, decoration: const InputDecoration(labelText: 'Subject Name')),
+            const SizedBox(height: 12),
+            TextField(controller: codeController, decoration: const InputDecoration(labelText: 'Subject Code')),
+            const SizedBox(height: 12),
+            TextField(controller: creditController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Credit Hours')),
+          ],
         ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogCtx), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () async {
+              final name = nameController.text.trim();
+              final code = codeController.text.trim();
+              final credits = int.tryParse(creditController.text.trim()) ?? 3;
+              if (name.isNotEmpty) {
+                final success = await ref
+                    .read(academicManagementNotifierProvider.notifier)
+                    .updateSubject(
+                      subjectId: subject.subjectId,
+                      name: name,
+                      code: code.isNotEmpty ? code : null,
+                      creditHours: credits,
+                    );
+                if (success && context.mounted) Navigator.pop(dialogCtx);
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2563EB)),
+            child: const Text('Save', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showBatchAddSubjectDialog(BuildContext context) {
+    final batchController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Batch Add Subjects', style: TextStyle(fontWeight: FontWeight.bold)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Enter subject names separated by new lines or commas:',
-              style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+              'Enter one subject per line (Format: Name | Code | CreditHours):',
+              style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             TextField(
-              controller: batchTextController,
+              controller: batchController,
               maxLines: 5,
               decoration: const InputDecoration(
                 border: OutlineInputBorder(),
-                hintText: 'Mathematics I\nDigital Logic\nComputer Fundamentals\nEnglish I',
+                hintText: 'Mathematics I | MTH101 | 3\nDigital Logic | CSc102 | 3\nEnglish I | ENG103 | 2',
               ),
             ),
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx),
-            child: const Text('Cancel'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(dialogCtx), child: const Text('Cancel')),
           ElevatedButton(
-            onPressed: state.isSubmitting
-                ? null
-                : () async {
-                    final raw = batchTextController.text.trim();
-                    if (raw.isEmpty) return;
-
-                    final lines = raw
-                        .split(RegExp(r'[\n,]'))
-                        .map((s) => s.trim())
-                        .where((s) => s.isNotEmpty)
-                        .toList();
-
-                    if (lines.isEmpty) return;
-
-                    final subjectsPayload = lines
-                        .map((name) => {'name': name, 'creditHours': 3})
-                        .toList();
-
-                    final success = await ref
-                        .read(academicManagementNotifierProvider.notifier)
-                        .batchCreateSubjects(subjects: subjectsPayload);
-
-                    if (success && context.mounted) {
-                      Navigator.pop(dialogCtx);
-                    }
-                  },
-            style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF16A34A)),
-            child: state.isSubmitting
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Colors.white),
-                  )
-                : const Text('Batch Import', style: TextStyle(color: Colors.white)),
+            onPressed: () async {
+              final text = batchController.text.trim();
+              if (text.isNotEmpty) {
+                final lines = text.split('\n');
+                final List<Map<String, dynamic>> items = [];
+                for (final line in lines) {
+                  final parts = line.split('|').map((e) => e.trim()).toList();
+                  if (parts.isNotEmpty && parts[0].isNotEmpty) {
+                    items.add({
+                      'name': parts[0],
+                      'code': parts.length > 1 && parts[1].isNotEmpty ? parts[1] : null,
+                      'creditHours': parts.length > 2 ? int.tryParse(parts[2]) ?? 3 : 3,
+                    });
+                  }
+                }
+                if (items.isNotEmpty) {
+                  final success = await ref
+                      .read(academicManagementNotifierProvider.notifier)
+                      .batchCreateSubjects(subjects: items);
+                  if (success && context.mounted) Navigator.pop(dialogCtx);
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2563EB)),
+            child: const Text('Batch Add', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
     );
   }
 
-  void _confirmDeleteSubject(BuildContext context, dynamic subject) {
+  void _confirmDeleteSubject(BuildContext context, Subject subject) {
     showDialog(
       context: context,
       builder: (dialogCtx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Delete Subject', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text('Delete Subject'),
         content: Text('Are you sure you want to delete "${subject.name}"?'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx),
-            child: const Text('Cancel'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(dialogCtx), child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () async {
-              Navigator.pop(dialogCtx);
-              await ref
+              final success = await ref
                   .read(academicManagementNotifierProvider.notifier)
                   .deleteSubject(subject.subjectId);
+              if (success && context.mounted) Navigator.pop(dialogCtx);
             },
-            style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFDC2626)),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFDC2626)),
             child: const Text('Delete', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
     );
-  }
-
-  String _getOrdinal(int num) {
-    const ordinals = ['', 'First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth', 'Seventh', 'Eighth'];
-    if (num > 0 && num < ordinals.length) return ordinals[num];
-    return '${num}th';
   }
 }

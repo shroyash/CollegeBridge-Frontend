@@ -173,7 +173,7 @@ class _AssignSubjectDialogState extends ConsumerState<AssignSubjectDialog> {
                                 final isChecked = _selectedSubjectIds.contains(subject.subjectId);
                                 return CheckboxListTile(
                                   title: Text(subject.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-                                  subtitle: Text('${subject.faculty} • Sem ${subject.semester} (${subject.creditHours} Credits)'),
+                                  subtitle: Text('${subject.programName} • ${subject.levelName} (${subject.creditHours} Credits)'),
                                   value: isChecked,
                                   activeColor: const Color(0xFF2563EB),
                                   onChanged: (val) {

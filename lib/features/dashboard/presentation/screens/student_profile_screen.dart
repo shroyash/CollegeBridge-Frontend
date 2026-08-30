@@ -6,6 +6,9 @@ import 'package:image_picker/image_picker.dart';
 
 import '../controllers/dashboard_providers.dart';
 import '../controllers/profile_notifier.dart';
+import '../widgets/change_email_modal.dart';
+import '../widgets/change_password_modal.dart';
+import 'help_and_support_screen.dart';
 
 class StudentProfileScreen extends ConsumerStatefulWidget {
   final VoidCallback? onBack;
@@ -83,7 +86,7 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen> {
     final faculty = p.studentDetails?.faculty ?? 'BCA';
     final semester = p.studentDetails?.semester ?? '1st';
     final rollNo = 'BCA/${DateTime.now().year}/0${p.userId}';
-    final email = p.email ?? 'student@college.edu';
+    final email = p.email.isNotEmpty ? p.email : 'student@college.edu';
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
@@ -209,13 +212,13 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen> {
             icon: Icons.email_outlined,
             title: 'Change Email',
             subtitle: email,
-            onTap: () => _showChangeEmailModal(context, email),
+            onTap: () => ChangeEmailModal.show(context, email),
           ),
           _settingsTile(
             icon: Icons.lock_outline,
             title: 'Change Password',
             subtitle: 'Secure your account with a new password',
-            onTap: () => _showChangePasswordModal(context),
+            onTap: () => ChangePasswordModal.show(context),
           ),
           _settingsTile(
             icon: Icons.help_outline_rounded,
@@ -375,290 +378,12 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen> {
 
   // ── Modals & Interactivity ──────────────────────────────────────────────────
 
-  void _showChangeEmailModal(BuildContext context, String currentEmail) {
-    final emailController = TextEditingController(text: currentEmail);
-    final passwordController = TextEditingController();
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) {
-        return Padding(
-          padding: EdgeInsets.only(
-            left: 24,
-            right: 24,
-            top: 20,
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFCBD5E1),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Change Email Address',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                'Enter your new email address and confirm with password.',
-                style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
-              ),
-              const SizedBox(height: 20),
-              TextField(
-                controller: emailController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(
-                  labelText: 'New Email Address',
-                  prefixIcon: const Icon(Icons.email_outlined, color: Color(0xFF2563EB)),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
-              const SizedBox(height: 14),
-              TextField(
-                controller: passwordController,
-                obscureText: true,
-                decoration: InputDecoration(
-                  labelText: 'Current Password',
-                  prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFF2563EB)),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    final newEmail = emailController.text.trim();
-                    if (newEmail.isEmpty || !newEmail.contains('@')) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Please enter a valid email address')),
-                      );
-                      return;
-                    }
-                    Navigator.pop(ctx);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Email update request sent! Please verify your inbox.'),
-                        backgroundColor: Color(0xFF16A34A),
-                      ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2563EB),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: const Text('Update Email', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  void _showChangePasswordModal(BuildContext context) {
-    final currentPassController = TextEditingController();
-    final newPassController = TextEditingController();
-    final confirmPassController = TextEditingController();
-    bool hidePasswords = true;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Padding(
-              padding: EdgeInsets.only(
-                left: 24,
-                right: 24,
-                top: 20,
-                bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFCBD5E1),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Change Password',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'Your new password must be at least 6 characters long.',
-                    style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
-                  ),
-                  const SizedBox(height: 20),
-                  TextField(
-                    controller: currentPassController,
-                    obscureText: hidePasswords,
-                    decoration: InputDecoration(
-                      labelText: 'Current Password',
-                      prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFF2563EB)),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  TextField(
-                    controller: newPassController,
-                    obscureText: hidePasswords,
-                    decoration: InputDecoration(
-                      labelText: 'New Password',
-                      prefixIcon: const Icon(Icons.lock_reset, color: Color(0xFF2563EB)),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  TextField(
-                    controller: confirmPassController,
-                    obscureText: hidePasswords,
-                    decoration: InputDecoration(
-                      labelText: 'Confirm New Password',
-                      prefixIcon: const Icon(Icons.check_circle_outline, color: Color(0xFF2563EB)),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Checkbox(
-                        value: !hidePasswords,
-                        onChanged: (val) => setModalState(() => hidePasswords = !val!),
-                        activeColor: const Color(0xFF2563EB),
-                      ),
-                      const Text('Show Passwords', style: TextStyle(fontSize: 13, color: Color(0xFF64748B))),
-                    ],
-                  ),
-                  const SizedBox(height: 18),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        final newP = newPassController.text;
-                        final confirmP = confirmPassController.text;
-                        if (newP.length < 6) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('New password must be at least 6 characters.')),
-                          );
-                          return;
-                        }
-                        if (newP != confirmP) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('New passwords do not match.')),
-                          );
-                          return;
-                        }
-                        Navigator.pop(ctx);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Password changed successfully!'),
-                            backgroundColor: Color(0xFF16A34A),
-                          ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2563EB),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      child: const Text('Update Password', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
   void _showHelpSupportModal(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const HelpAndSupportScreen(),
       ),
-      builder: (ctx) {
-        return Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFCBD5E1),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Campus Help & Support',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-              ),
-              const SizedBox(height: 16),
-              const ListTile(
-                leading: Icon(Icons.email_outlined, color: Color(0xFF2563EB)),
-                title: Text('Support Email', style: TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text('support@college.edu'),
-              ),
-              const ListTile(
-                leading: Icon(Icons.phone_outlined, color: Color(0xFF2563EB)),
-                title: Text('Helpline', style: TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text('+977 1-4200000 (Mon - Fri, 9 AM - 5 PM)'),
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2563EB),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: const Text('Close', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
     );
   }
 
@@ -695,10 +420,11 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen> {
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () async {
+              final messenger = ScaffoldMessenger.of(context);
               Navigator.pop(ctx);
               final ok = await ref.read(profileNotifierProvider.notifier).updateName(controller.text.trim());
               if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                messenger.showSnackBar(SnackBar(
                   content: Text(ok ? 'Profile updated!' : 'Failed to update profile'),
                   backgroundColor: ok ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
                 ));

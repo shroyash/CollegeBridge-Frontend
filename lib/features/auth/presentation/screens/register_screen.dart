@@ -1,21 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../domain/entities/faculty.dart';
+import '../../../../app/constants/api_constants.dart';
+import '../../../../core/network/api_client.dart';
+import '../../../../core/storage/secure_storage_service.dart';
+import '../../../institution_admin/data/models/academic_level_model.dart';
+import '../../../institution_admin/data/models/academic_program_model.dart';
+import '../../data/datasources/auth_remote_datasource.dart';
 import '../controllers/auth_providers.dart';
 import '../controllers/auth_state.dart';
 import '../widgets/auth_button.dart';
 import '../widgets/auth_info_card.dart';
 import '../widgets/auth_text_field.dart';
 
-/// Register Screen — matches the design:
-/// • "Create Student Account" heading + subtitle
-/// • Institution Code, Full Name, Email, Password fields
-/// • Department dropdown (Faculty enum)
-/// • Semester chip grid (1st–8th)
-/// • "Institutional Onboarding" info card
-/// • Blue "CREATE ACCOUNT →" CTA
-/// • "Already have an account? Sign In" link
+/// Register Screen — normalized academic hierarchy version.
+/// • Institution Code → loads Programs → loads Levels → picks levelId
 class RegisterScreen extends ConsumerStatefulWidget {
   final VoidCallback onNavigateToLogin;
   final VoidCallback onRegisterSuccess;
@@ -39,14 +38,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
-  Faculty? _selectedFaculty;
-  int? _selectedSemester;
   bool _obscurePassword = true;
 
-  static const _semesterLabels = [
-    '1st', '2nd', '3rd', '4th',
-    '5th', '6th', '7th', '8th',
-  ];
+  // Hierarchy state
+  List<AcademicProgramModel> _programs = [];
+  List<AcademicLevelModel> _levels = [];
+  AcademicProgramModel? _selectedProgram;
+  AcademicLevelModel? _selectedLevel;
+  bool _loadingPrograms = false;
+  bool _loadingLevels = false;
+  String? _hierarchyError;
 
   @override
   void dispose() {
@@ -57,14 +58,70 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     super.dispose();
   }
 
-  void _onRegister() {
-    if (!_formKey.currentState!.validate()) return;
-    if (_selectedFaculty == null) {
-      _showError('Please select a faculty / department.');
+  AuthRemoteDataSource get _authDs {
+    return ref.read(authRemoteDataSourceProvider);
+  }
+
+  Future<void> _loadPrograms() async {
+    final code = _institutionCodeController.text.trim().toUpperCase();
+    if (code.isEmpty) {
+      setState(() {
+        _hierarchyError = 'Please enter an institution code first.';
+      });
       return;
     }
-    if (_selectedSemester == null) {
-      _showError('Please select a semester.');
+    setState(() {
+      _loadingPrograms = true;
+      _programs = [];
+      _levels = [];
+      _selectedProgram = null;
+      _selectedLevel = null;
+      _hierarchyError = null;
+    });
+    try {
+      final programs = await _authDs.getPublicPrograms(code);
+      setState(() {
+        _programs = programs;
+        _loadingPrograms = false;
+        if (programs.isEmpty) {
+          _hierarchyError = 'No academic programs found for institution code "$code".';
+        }
+      });
+    } catch (e) {
+      setState(() {
+        _hierarchyError = e.toString().replaceAll('Exception: ', '');
+        _loadingPrograms = false;
+      });
+    }
+  }
+
+  Future<void> _loadLevels(int programId) async {
+    setState(() {
+      _loadingLevels = true;
+      _levels = [];
+      _selectedLevel = null;
+    });
+    try {
+      final levels = await _authDs.getPublicLevels(programId);
+      setState(() {
+        _levels = levels;
+        _loadingLevels = false;
+        if (levels.isEmpty) {
+          _hierarchyError = 'No levels found for this program.';
+        }
+      });
+    } catch (e) {
+      setState(() {
+        _hierarchyError = e.toString().replaceAll('Exception: ', '');
+        _loadingLevels = false;
+      });
+    }
+  }
+
+  void _onRegister() {
+    if (!_formKey.currentState!.validate()) return;
+    if (_selectedLevel == null) {
+      _showError('Please select your program and level.');
       return;
     }
 
@@ -73,8 +130,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           name: _nameController.text.trim(),
           email: _emailController.text.trim(),
           password: _passwordController.text,
-          faculty: _selectedFaculty!,
-          semester: _selectedSemester!,
+          levelId: _selectedLevel!.levelId,
         );
   }
 
@@ -162,14 +218,24 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   hint: 'e.g. TU-KTM',
                   controller: _institutionCodeController,
                   textCapitalization: TextCapitalization.characters,
-                  suffixIcon: const Icon(
-                    Icons.business_outlined,
-                    color: Color(0xFFB0BAC8),
-                    size: 20,
+                  suffixIcon: GestureDetector(
+                    onTap: () {
+                      final code = _institutionCodeController.text.trim();
+                      if (code.isNotEmpty) _loadPrograms();
+                    },
+                    child: const Icon(
+                      Icons.search_rounded,
+                      color: Color(0xFF2563EB),
+                      size: 20,
+                    ),
                   ),
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) return 'Institution code is required';
                     return null;
+                  },
+                  onFieldSubmitted: (_) {
+                    final code = _institutionCodeController.text.trim();
+                    if (code.isNotEmpty) _loadPrograms();
                   },
                 ),
 
@@ -243,141 +309,72 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
                 const SizedBox(height: 18),
 
-                // ── Department dropdown ──
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'DEPARTMENT',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.8,
-                        color: Color(0xFF64748B),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    DropdownButtonFormField<Faculty>(
-                      initialValue: _selectedFaculty,
-                      hint: const Text(
-                        'Select Faculty / Program',
-                        style: TextStyle(
-                          color: Color(0xFFB0BAC8),
-                          fontSize: 14,
-                        ),
-                      ),
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor: const Color(0xFFF8FAFC),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 14,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(
-                              color: Color(0xFFE2E8F0), width: 1.5),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(
-                              color: Color(0xFFE2E8F0), width: 1.5),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(
-                              color: Color(0xFF2563EB), width: 2),
-                        ),
-                      ),
-                      items: Faculty.values.map((f) {
-                        return DropdownMenuItem(
-                          value: f,
-                          child: Text(
-                            f.displayName,
-                            style: const TextStyle(
-                              fontSize: 15,
-                              color: Color(0xFF1E293B),
-                              fontWeight: FontWeight.w500,
+                // ── Program Selector ──
+                _buildDropdownSection<AcademicProgramModel>(
+                  label: 'PROGRAM',
+                  isLoading: _loadingPrograms,
+                  hint: _programs.isEmpty
+                      ? 'Enter institution code and tap 🔍 first'
+                      : 'Select your program',
+                  value: _selectedProgram,
+                  items: _programs
+                      .map((p) => DropdownMenuItem(
+                            value: p,
+                            child: Text(
+                              '${p.name} (${p.code})',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Color(0xFF1E293B),
+                              ),
                             ),
-                          ),
-                        );
-                      }).toList(),
-                      onChanged: (v) => setState(() => _selectedFaculty = v),
-                      icon: const Icon(
-                        Icons.keyboard_arrow_down_rounded,
-                        color: Color(0xFF94A3B8),
-                      ),
-                      dropdownColor: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ],
+                          ))
+                      .toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedProgram = value;
+                      _selectedLevel = null;
+                      _levels = [];
+                    });
+                    if (value != null) _loadLevels(value.programId);
+                  },
                 ),
 
                 const SizedBox(height: 18),
 
-                // ── Semester chip grid ──
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'SEMESTER',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.8,
-                        color: Color(0xFF64748B),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 4,
-                        crossAxisSpacing: 8,
-                        mainAxisSpacing: 8,
-                        childAspectRatio: 2.4,
-                      ),
-                      itemCount: 8,
-                      itemBuilder: (context, index) {
-                        final semester = index + 1;
-                        final isSelected = _selectedSemester == semester;
-                        return GestureDetector(
-                          onTap: () =>
-                              setState(() => _selectedSemester = semester),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 150),
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? const Color(0xFF2563EB)
-                                  : const Color(0xFFF1F5F9),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: isSelected
-                                    ? const Color(0xFF2563EB)
-                                    : const Color(0xFFE2E8F0),
-                                width: 1.5,
+                // ── Level Selector ──
+                _buildDropdownSection<AcademicLevelModel>(
+                  label: 'LEVEL / SEMESTER',
+                  isLoading: _loadingLevels,
+                  hint: _selectedProgram == null
+                      ? 'Select a program first'
+                      : _levels.isEmpty
+                          ? 'No levels available'
+                          : 'Select your level',
+                  value: _selectedLevel,
+                  items: _levels
+                      .map((l) => DropdownMenuItem(
+                            value: l,
+                            child: Text(
+                              l.name,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Color(0xFF1E293B),
                               ),
                             ),
-                            child: Center(
-                              child: Text(
-                                _semesterLabels[index],
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: isSelected
-                                      ? Colors.white
-                                      : const Color(0xFF475569),
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
+                          ))
+                      .toList(),
+                  onChanged: _selectedProgram == null || _levels.isEmpty
+                      ? null
+                      : (AcademicLevelModel? value) => setState(() => _selectedLevel = value),
                 ),
+
+                if (_hierarchyError != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    _hierarchyError!,
+                    style: const TextStyle(color: Color(0xFFEF4444), fontSize: 12),
+                  ),
+                ],
 
                 const SizedBox(height: 22),
 
@@ -436,6 +433,90 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildDropdownSection<T>({
+    required String label,
+    required bool isLoading,
+    required String hint,
+    required T? value,
+    required List<DropdownMenuItem<T>> items,
+    required void Function(T?)? onChanged,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.8,
+            color: Color(0xFF64748B),
+          ),
+        ),
+        const SizedBox(height: 6),
+        if (isLoading)
+          Container(
+            height: 50,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFFE2E8F0), width: 1.5),
+            ),
+            child: const Center(
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+          )
+        else
+          DropdownButtonFormField<T>(
+            value: value,
+            hint: Text(
+              hint,
+              style: const TextStyle(
+                color: Color(0xFFB0BAC8),
+                fontSize: 14,
+              ),
+            ),
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: const Color(0xFFF8FAFC),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: Color(0xFF2563EB), width: 2),
+              ),
+              disabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
+              ),
+            ),
+            items: items,
+            onChanged: onChanged,
+            icon: const Icon(
+              Icons.keyboard_arrow_down_rounded,
+              color: Color(0xFF94A3B8),
+            ),
+            dropdownColor: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+          ),
+      ],
     );
   }
 }

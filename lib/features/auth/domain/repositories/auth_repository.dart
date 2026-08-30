@@ -1,6 +1,4 @@
 import '../entities/auth_user.dart';
-import '../entities/faculty.dart';
-
 
 abstract class AuthRepository {
   Future<AuthUser> login({
@@ -14,8 +12,7 @@ abstract class AuthRepository {
     required String name,
     required String email,
     required String password,
-    required Faculty faculty,
-    required int semester,
+    required int levelId,
   });
 
   Future<void> logout({required String refreshToken});

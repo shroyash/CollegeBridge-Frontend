@@ -327,8 +327,8 @@ class _StudentClassesScreenState extends ConsumerState<StudentClassesScreen> {
       separatorBuilder: (_, __) => const SizedBox(height: 14),
       itemBuilder: (context, index) {
         final subject = subjects[index];
-        final teacherName = subject.faculty.isNotEmpty
-            ? subject.faculty
+        final teacherName = subject.programName.isNotEmpty
+            ? subject.programName
             : mockTeachers[index % mockTeachers.length];
         final newPostsCount = mockUpdates[index % mockUpdates.length];
 

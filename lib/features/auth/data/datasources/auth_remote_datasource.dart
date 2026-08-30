@@ -3,7 +3,8 @@ import 'package:dio/dio.dart';
 import '../../../../app/constants/api_constants.dart';
 import '../../../../core/error/auth_exceptions.dart';
 import '../../../../core/network/api_client.dart';
-import '../../domain/entities/faculty.dart';
+import '../../../institution_admin/data/models/academic_level_model.dart';
+import '../../../institution_admin/data/models/academic_program_model.dart';
 import '../models/auth_user_model.dart';
 
 /// Handles all remote HTTP calls for the auth feature.
@@ -14,7 +15,7 @@ class AuthRemoteDataSource {
   const AuthRemoteDataSource(this._apiClient);
 
   /// POST /api/auth/login
-  /// Now accepts [institutionCode] in addition to email/password.
+  /// Accepts [institutionCode] in addition to email/password.
   /// Maps backend 403 reason codes to [LoginFailureException].
   Future<AuthUserModel> login({
     required String institutionCode,
@@ -34,23 +35,19 @@ class AuthRemoteDataSource {
       if (rawData == null) {
         throw Exception('Server returned an empty response.');
       }
-      final rawMap = rawData is Map
-          ? Map<String, dynamic>.from(rawData)
-          : <String, dynamic>{};
-      return AuthUserModel.fromJson(rawMap);
+      return AuthUserModel.fromJson(rawData);
     } on DioException catch (e) {
       throw _mapLoginDioException(e);
     }
   }
 
-  /// POST /api/auth/register  (existing student self-registration)
+  /// POST /api/auth/register  (student self-registration using levelId)
   Future<AuthUserModel> register({
     required String institutionCode,
     required String name,
     required String email,
     required String password,
-    required Faculty faculty,
-    required int semester,
+    required int levelId,
   }) async {
     try {
       final response = await _apiClient.post<Map<String, dynamic>>(
@@ -60,18 +57,50 @@ class AuthRemoteDataSource {
           'name': name,
           'email': email,
           'password': password,
-          'faculty': faculty.value,
-          'semester': semester,
+          'levelId': levelId,
         },
       );
       final rawData = response.data;
       if (rawData == null) {
         throw Exception('Server returned an empty response.');
       }
-      final rawMap = rawData is Map
-          ? Map<String, dynamic>.from(rawData)
-          : <String, dynamic>{};
-      return AuthUserModel.fromJson(rawMap);
+      return AuthUserModel.fromJson(rawData);
+    } on DioException catch (e) {
+      throw _mapDioException(e);
+    }
+  }
+
+  /// GET /api/public/academic/institutions/{institutionCode}/programs
+  Future<List<AcademicProgramModel>> getPublicPrograms(String institutionCode) async {
+    try {
+      final response = await _apiClient.get<Map<String, dynamic>>(
+        ApiConstants.publicInstitutionPrograms(institutionCode),
+      );
+      final data = response.data?['data'];
+      if (data is List) {
+        return data
+            .map((e) => AcademicProgramModel.fromJson(e as Map<String, dynamic>))
+            .toList();
+      }
+      return [];
+    } on DioException catch (e) {
+      throw _mapDioException(e);
+    }
+  }
+
+  /// GET /api/public/academic/programs/{programId}/levels
+  Future<List<AcademicLevelModel>> getPublicLevels(int programId) async {
+    try {
+      final response = await _apiClient.get<Map<String, dynamic>>(
+        ApiConstants.publicProgramLevels(programId),
+      );
+      final data = response.data?['data'];
+      if (data is List) {
+        return data
+            .map((e) => AcademicLevelModel.fromJson(e as Map<String, dynamic>))
+            .toList();
+      }
+      return [];
     } on DioException catch (e) {
       throw _mapDioException(e);
     }
@@ -89,11 +118,23 @@ class AuthRemoteDataSource {
     }
   }
 
-  /// POST /api/auth/forgot-password
+  /// POST /api/auth/password/forgot
   Future<void> forgotPassword({required String email}) async {
     try {
       await _apiClient.post<dynamic>(
         ApiConstants.forgotPassword,
+        data: {'email': email},
+      );
+    } on DioException catch (e) {
+      throw _mapDioException(e);
+    }
+  }
+
+  /// POST /api/auth/password/resend-otp
+  Future<void> resendOtp({required String email}) async {
+    try {
+      await _apiClient.post<dynamic>(
+        ApiConstants.resendOtp,
         data: {'email': email},
       );
     } on DioException catch (e) {
@@ -145,7 +186,6 @@ class AuthRemoteDataSource {
   // ── Exception Mappers ────────────────────────────────────────────────────
 
   /// Special mapper for login that decodes backend reason codes.
-  /// Backend sends 403 with errorCode field for institution/user status issues.
   Exception _mapLoginDioException(DioException e) {
     final statusCode = e.response?.statusCode;
     final data = e.response?.data;

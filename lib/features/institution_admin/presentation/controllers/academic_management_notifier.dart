@@ -1,39 +1,30 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../dashboard/domain/entities/subject.dart';
-import '../../domain/entities/academic_class.dart';
-import '../../domain/repositories/academic_admin_repository.dart';
+import '../../data/datasources/academic_admin_remote_datasource.dart';
+import '../../domain/entities/academic_level.dart';
+import '../../domain/entities/academic_program.dart';
 import 'academic_management_state.dart';
 
 class AcademicManagementNotifier extends StateNotifier<AcademicManagementState> {
-  final AcademicAdminRepository _repository;
+  final AcademicAdminRemoteDataSource _dataSource;
 
-  AcademicManagementNotifier(this._repository)
-      : super(const AcademicManagementState());
+  AcademicManagementNotifier(this._dataSource) : super(const AcademicManagementState());
 
+  /// Load all programs for this institution.
   Future<void> init() async {
     state = state.copyWith(isLoading: true, clearError: true, clearSuccess: true);
     try {
-      final faculties = await _repository.getSupportedFaculties();
-
-      if (faculties.isEmpty) {
-        // No faculties configured yet — show empty state
-        state = state.copyWith(
-          isLoading: false,
-          supportedFaculties: [],
-          selectedFaculty: '',
-        );
-        return;
-      }
-
-      final initialFaculty = faculties.first;
-
+      final programs = await _dataSource.getPrograms();
       state = state.copyWith(
-        supportedFaculties: faculties,
-        selectedFaculty: initialFaculty,
-        selectedSemester: 1,
+        isLoading: false,
+        programs: List<AcademicProgram>.from(programs),
       );
 
-      await loadAcademicData();
+      // Auto-select first program if available
+      if (programs.isNotEmpty) {
+        await selectProgram(programs.first);
+      }
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
@@ -42,21 +33,45 @@ class AcademicManagementNotifier extends StateNotifier<AcademicManagementState> 
     }
   }
 
-  Future<void> loadAcademicData() async {
-    state = state.copyWith(isLoading: true, clearError: true, clearSuccess: true);
+  Future<void> selectProgram(AcademicProgram program) async {
+    state = state.copyWith(
+      selectedProgram: program,
+      levels: [],
+      subjects: [],
+      loadingLevels: true,
+      clearSelectedLevel: true,
+      clearError: true,
+    );
     try {
-      final classes = await _repository.getAcademicClasses();
-      final subjects = await _repository.getSubjects(
-        faculty: state.selectedFaculty,
-        semester: state.selectedSemester,
+      final levels = await _dataSource.getLevels(programId: program.programId);
+      state = state.copyWith(
+        levels: List<AcademicLevel>.from(levels),
+        loadingLevels: false,
       );
 
-      // Use List.from to re-type the lists so that runtime type is
-      // List<AcademicClass>/List<Subject> (not the Model subtypes).
-      // This prevents TypeError when firstWhere orElse returns a base type.
+      // Auto-select first level if available, otherwise clear level & subjects
+      if (levels.isNotEmpty) {
+        await selectLevel(levels.first);
+      } else {
+        state = state.copyWith(
+          clearSelectedLevel: true,
+          subjects: [],
+        );
+      }
+    } catch (e) {
+      state = state.copyWith(
+        loadingLevels: false,
+        errorMessage: e.toString().replaceAll('Exception: ', ''),
+      );
+    }
+  }
+
+  Future<void> selectLevel(AcademicLevel level) async {
+    state = state.copyWith(selectedLevel: level, subjects: [], isLoading: true, clearError: true);
+    try {
+      final subjects = await _dataSource.getSubjects(levelId: level.levelId);
       state = state.copyWith(
         isLoading: false,
-        academicClasses: List<AcademicClass>.from(classes),
         subjects: List<Subject>.from(subjects),
       );
     } catch (e) {
@@ -67,66 +82,23 @@ class AcademicManagementNotifier extends StateNotifier<AcademicManagementState> 
     }
   }
 
-  void selectFaculty(String faculty) {
-    if (state.selectedFaculty != faculty) {
-      state = state.copyWith(selectedFaculty: faculty);
-      loadAcademicData();
-    }
+  Future<void> refreshSubjects() async {
+    if (state.selectedLevel == null) return;
+    await selectLevel(state.selectedLevel!);
   }
 
-  Future<void> addCustomFaculty(String facultyCode) async {
-    final cleaned = facultyCode.trim().toUpperCase();
-    if (cleaned.isEmpty) return;
+  // ── Programs ──────────────────────────────────────────────────────────────
 
+  Future<bool> createProgram({required String name, required String code}) async {
     state = state.copyWith(isSubmitting: true, clearError: true, clearSuccess: true);
     try {
-      // Create first academic class (Sem 1) on backend so the faculty gets persisted
-      await _repository.createAcademicClass(
-        faculty: cleaned,
-        semester: 1,
-      );
-
-      // Re-fetch faculties from backend to get the authoritative list
-      final faculties = await _repository.getSupportedFaculties();
-
+      final program = await _dataSource.createProgram(name: name, code: code);
+      final updatedPrograms = [...state.programs, program as AcademicProgram];
       state = state.copyWith(
         isSubmitting: false,
-        supportedFaculties: faculties,
-        selectedFaculty: cleaned,
-        selectedSemester: 1,
-        successMessage: 'Faculty "$cleaned" added with Semester 1.',
+        programs: updatedPrograms,
+        successMessage: 'Program "$name" created successfully.',
       );
-      await loadAcademicData();
-    } catch (e) {
-      state = state.copyWith(
-        isSubmitting: false,
-        errorMessage: e.toString().replaceAll('Exception: ', ''),
-      );
-    }
-  }
-
-  void selectSemester(int semester) {
-    if (state.selectedSemester != semester) {
-      state = state.copyWith(selectedSemester: semester);
-      loadAcademicData();
-    }
-  }
-
-  Future<bool> createAcademicClass({required int semester, String? displayName}) async {
-    state = state.copyWith(isSubmitting: true, clearError: true, clearSuccess: true);
-    try {
-      await _repository.createAcademicClass(
-        faculty: state.selectedFaculty,
-        semester: semester,
-        displayName: displayName,
-      );
-
-      state = state.copyWith(
-        isSubmitting: false,
-        successMessage: 'Academic class (${state.selectedFaculty} Sem $semester) added successfully.',
-      );
-
-      await loadAcademicData();
       return true;
     } catch (e) {
       state = state.copyWith(
@@ -137,26 +109,51 @@ class AcademicManagementNotifier extends StateNotifier<AcademicManagementState> 
     }
   }
 
-  Future<bool> updateAcademicClass({
-    required int classId,
-    required int semester,
-    String? displayName,
+  Future<bool> deleteProgram(int programId) async {
+    state = state.copyWith(isSubmitting: true, clearError: true, clearSuccess: true);
+    try {
+      await _dataSource.deleteProgram(programId);
+      final updatedPrograms = state.programs.where((p) => p.programId != programId).toList();
+      state = state.copyWith(
+        isSubmitting: false,
+        programs: updatedPrograms,
+        successMessage: 'Program deleted.',
+        clearSelectedProgram: true,
+        levels: [],
+        subjects: [],
+      );
+      return true;
+    } catch (e) {
+      state = state.copyWith(
+        isSubmitting: false,
+        errorMessage: e.toString().replaceAll('Exception: ', ''),
+      );
+      return false;
+    }
+  }
+
+  // ── Levels ────────────────────────────────────────────────────────────────
+
+  Future<bool> createLevel({
+    required int programId,
+    required int levelNumber,
+    required String name,
+    required String type,
   }) async {
     state = state.copyWith(isSubmitting: true, clearError: true, clearSuccess: true);
     try {
-      await _repository.updateAcademicClass(
-        classId: classId,
-        faculty: state.selectedFaculty,
-        semester: semester,
-        displayName: displayName,
+      final level = await _dataSource.createLevel(
+        programId: programId,
+        levelNumber: levelNumber,
+        name: name,
+        type: type,
       );
-
+      final updatedLevels = [...state.levels, level as AcademicLevel];
       state = state.copyWith(
         isSubmitting: false,
-        successMessage: 'Academic class updated successfully.',
+        levels: updatedLevels,
+        successMessage: 'Level "$name" created successfully.',
       );
-
-      await loadAcademicData();
       return true;
     } catch (e) {
       state = state.copyWith(
@@ -166,26 +163,52 @@ class AcademicManagementNotifier extends StateNotifier<AcademicManagementState> 
       return false;
     }
   }
+
+  Future<bool> deleteLevel(int levelId) async {
+    state = state.copyWith(isSubmitting: true, clearError: true, clearSuccess: true);
+    try {
+      await _dataSource.deleteLevel(levelId);
+      final updatedLevels = state.levels.where((l) => l.levelId != levelId).toList();
+      state = state.copyWith(
+        isSubmitting: false,
+        levels: updatedLevels,
+        successMessage: 'Level deleted.',
+        clearSelectedLevel: true,
+        subjects: [],
+      );
+      return true;
+    } catch (e) {
+      state = state.copyWith(
+        isSubmitting: false,
+        errorMessage: e.toString().replaceAll('Exception: ', ''),
+      );
+      return false;
+    }
+  }
+
+  // ── Subjects ──────────────────────────────────────────────────────────────
 
   Future<bool> createSubject({
     required String name,
-    required int creditHours,
+    String? code,
+    int creditHours = 3,
   }) async {
+    final levelId = state.selectedLevel?.levelId;
+    if (levelId == null) return false;
+
     state = state.copyWith(isSubmitting: true, clearError: true, clearSuccess: true);
     try {
-      await _repository.createSubject(
+      await _dataSource.createSubject(
         name: name,
-        faculty: state.selectedFaculty,
-        semester: state.selectedSemester,
+        levelId: levelId,
+        code: code,
         creditHours: creditHours,
       );
-
       state = state.copyWith(
         isSubmitting: false,
         successMessage: 'Subject "$name" created successfully.',
       );
-
-      await loadAcademicData();
+      await refreshSubjects();
       return true;
     } catch (e) {
       state = state.copyWith(
@@ -199,24 +222,22 @@ class AcademicManagementNotifier extends StateNotifier<AcademicManagementState> 
   Future<bool> updateSubject({
     required int subjectId,
     required String name,
-    required int creditHours,
+    String? code,
+    int creditHours = 3,
   }) async {
     state = state.copyWith(isSubmitting: true, clearError: true, clearSuccess: true);
     try {
-      await _repository.updateSubject(
+      await _dataSource.updateSubject(
         subjectId: subjectId,
         name: name,
-        faculty: state.selectedFaculty,
-        semester: state.selectedSemester,
+        code: code,
         creditHours: creditHours,
       );
-
       state = state.copyWith(
         isSubmitting: false,
         successMessage: 'Subject "$name" updated successfully.',
       );
-
-      await loadAcademicData();
+      await refreshSubjects();
       return true;
     } catch (e) {
       state = state.copyWith(
@@ -227,23 +248,21 @@ class AcademicManagementNotifier extends StateNotifier<AcademicManagementState> 
     }
   }
 
-  Future<bool> batchCreateSubjects({
-    required List<Map<String, dynamic>> subjects,
-  }) async {
+  Future<bool> batchCreateSubjects({required List<Map<String, dynamic>> subjects}) async {
+    final levelId = state.selectedLevel?.levelId;
+    if (levelId == null) return false;
+
     state = state.copyWith(isSubmitting: true, clearError: true, clearSuccess: true);
     try {
-      final created = await _repository.batchCreateSubjects(
-        faculty: state.selectedFaculty,
-        semester: state.selectedSemester,
+      final created = await _dataSource.batchCreateSubjects(
+        levelId: levelId,
         subjects: subjects,
       );
-
       state = state.copyWith(
         isSubmitting: false,
         successMessage: '${created.length} subject(s) added successfully.',
       );
-
-      await loadAcademicData();
+      await refreshSubjects();
       return true;
     } catch (e) {
       state = state.copyWith(
@@ -257,14 +276,12 @@ class AcademicManagementNotifier extends StateNotifier<AcademicManagementState> 
   Future<bool> deleteSubject(int subjectId) async {
     state = state.copyWith(isSubmitting: true, clearError: true, clearSuccess: true);
     try {
-      await _repository.deleteSubject(subjectId);
-
+      await _dataSource.deleteSubject(subjectId);
       state = state.copyWith(
         isSubmitting: false,
         successMessage: 'Subject deleted successfully.',
       );
-
-      await loadAcademicData();
+      await refreshSubjects();
       return true;
     } catch (e) {
       state = state.copyWith(

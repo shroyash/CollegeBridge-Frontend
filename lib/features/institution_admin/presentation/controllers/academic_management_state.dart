@@ -1,16 +1,24 @@
 import 'package:equatable/equatable.dart';
 import '../../../dashboard/domain/entities/subject.dart';
-import '../../domain/entities/academic_class.dart';
+import '../../domain/entities/academic_level.dart';
+import '../../domain/entities/academic_program.dart';
 
 class AcademicManagementState extends Equatable {
   final bool isLoading;
   final bool isSubmitting;
   final String? errorMessage;
   final String? successMessage;
-  final List<String> supportedFaculties;
-  final String selectedFaculty;
-  final int selectedSemester;
-  final List<AcademicClass> academicClasses;
+
+  // Programs (formerly faculties)
+  final List<AcademicProgram> programs;
+  final AcademicProgram? selectedProgram;
+
+  // Levels (formerly semesters/academic classes)
+  final List<AcademicLevel> levels;
+  final AcademicLevel? selectedLevel;
+  final bool loadingLevels;
+
+  // Subjects for selected level
   final List<Subject> subjects;
 
   const AcademicManagementState({
@@ -18,10 +26,11 @@ class AcademicManagementState extends Equatable {
     this.isSubmitting = false,
     this.errorMessage,
     this.successMessage,
-    this.supportedFaculties = const [],
-    this.selectedFaculty = '',
-    this.selectedSemester = 1,
-    this.academicClasses = const [],
+    this.programs = const [],
+    this.selectedProgram,
+    this.levels = const [],
+    this.selectedLevel,
+    this.loadingLevels = false,
     this.subjects = const [],
   });
 
@@ -30,23 +39,27 @@ class AcademicManagementState extends Equatable {
     bool? isSubmitting,
     String? errorMessage,
     String? successMessage,
-    List<String>? supportedFaculties,
-    String? selectedFaculty,
-    int? selectedSemester,
-    List<AcademicClass>? academicClasses,
+    List<AcademicProgram>? programs,
+    AcademicProgram? selectedProgram,
+    List<AcademicLevel>? levels,
+    AcademicLevel? selectedLevel,
+    bool? loadingLevels,
     List<Subject>? subjects,
     bool clearError = false,
     bool clearSuccess = false,
+    bool clearSelectedProgram = false,
+    bool clearSelectedLevel = false,
   }) {
     return AcademicManagementState(
       isLoading: isLoading ?? this.isLoading,
       isSubmitting: isSubmitting ?? this.isSubmitting,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       successMessage: clearSuccess ? null : (successMessage ?? this.successMessage),
-      supportedFaculties: supportedFaculties ?? this.supportedFaculties,
-      selectedFaculty: selectedFaculty ?? this.selectedFaculty,
-      selectedSemester: selectedSemester ?? this.selectedSemester,
-      academicClasses: academicClasses ?? this.academicClasses,
+      programs: programs ?? this.programs,
+      selectedProgram: clearSelectedProgram ? null : (selectedProgram ?? this.selectedProgram),
+      levels: levels ?? this.levels,
+      selectedLevel: clearSelectedLevel ? null : (selectedLevel ?? this.selectedLevel),
+      loadingLevels: loadingLevels ?? this.loadingLevels,
       subjects: subjects ?? this.subjects,
     );
   }
@@ -57,10 +70,11 @@ class AcademicManagementState extends Equatable {
         isSubmitting,
         errorMessage,
         successMessage,
-        supportedFaculties,
-        selectedFaculty,
-        selectedSemester,
-        academicClasses,
+        programs,
+        selectedProgram,
+        levels,
+        selectedLevel,
+        loadingLevels,
         subjects,
       ];
 }

@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../auth/presentation/controllers/auth_providers.dart';
+import '../../../dashboard/presentation/controllers/dashboard_providers.dart';
+import '../../../dashboard/presentation/widgets/change_password_modal.dart';
 
 class AdminProfileScreen extends ConsumerStatefulWidget {
   final String userName;
@@ -23,29 +25,10 @@ class _AdminProfileScreenState extends ConsumerState<AdminProfileScreen> {
   Map<String, dynamic>? _profileData;
   String? _errorMessage;
 
-  // Change Password Form Controllers
-  final _passwordFormKey = GlobalKey<FormState>();
-  final _currentPasswordController = TextEditingController();
-  final _newPasswordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
-
-  bool _obscureCurrent = true;
-  bool _obscureNew = true;
-  bool _obscureConfirm = true;
-  bool _isPasswordUpdating = false;
-
   @override
   void initState() {
     super.initState();
     _fetchProfileData();
-  }
-
-  @override
-  void dispose() {
-    _currentPasswordController.dispose();
-    _newPasswordController.dispose();
-    _confirmPasswordController.dispose();
-    super.dispose();
   }
 
   Future<void> _fetchProfileData() async {
@@ -247,49 +230,35 @@ class _AdminProfileScreenState extends ConsumerState<AdminProfileScreen> {
     }
   }
 
-  Future<void> _handleChangePassword() async {
-    if (!_passwordFormKey.currentState!.validate()) return;
-
-    setState(() => _isPasswordUpdating = true);
-
-    try {
-      final apiClient = ref.read(apiClientProvider);
-      await apiClient.post(
-        '/api/account/password/change',
-        data: {
-          'currentPassword': _currentPasswordController.text,
-          'newPassword': _newPasswordController.text,
-        },
-      );
-
-      if (mounted) {
-        _currentPasswordController.clear();
-        _newPasswordController.clear();
-        _confirmPasswordController.clear();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Password changed successfully!',
-                style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
-            backgroundColor: const Color(0xFF16A34A),
-            behavior: SnackBarBehavior.floating,
+  void _confirmLogout(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Logout', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: const Text('Are you sure you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
           ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to change password: ${e.toString().replaceAll('Exception: ', '')}'),
-            backgroundColor: const Color(0xFFDC2626),
-            behavior: SnackBarBehavior.floating,
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await ref.read(profileNotifierProvider.notifier).logoutAndClear();
+              if (mounted) {
+                Navigator.of(context).popUntil((route) => route.isFirst);
+                if (widget.onLogout != null) {
+                  widget.onLogout!();
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFDC2626)),
+            child: const Text('Logout', style: TextStyle(color: Colors.white)),
           ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isPasswordUpdating = false);
-      }
-    }
+        ],
+      ),
+    );
   }
 
   @override
@@ -342,120 +311,177 @@ class _AdminProfileScreenState extends ConsumerState<AdminProfileScreen> {
                   ),
                 )
               : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // ── Admin Identity Banner ──
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF1E40AF), Color(0xFF2563EB)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF2563EB).withValues(alpha: 0.25),
-                          blurRadius: 16,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 60,
-                          height: 60,
-                          decoration: const BoxDecoration(
-                            color: Colors.white24,
-                            shape: BoxShape.circle,
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // ── Admin Identity Banner ──
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF1E40AF), Color(0xFF2563EB)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
                           ),
-                          child: const Icon(
-                            Icons.admin_panel_settings_rounded,
-                            color: Colors.white,
-                            size: 34,
-                          ),
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF2563EB).withValues(alpha: 0.25),
+                              blurRadius: 16,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                name,
-                                style: GoogleFonts.inter(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w800,
-                                  color: Colors.white,
-                                ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 60,
+                              height: 60,
+                              decoration: const BoxDecoration(
+                                color: Colors.white24,
+                                shape: BoxShape.circle,
                               ),
-                              const SizedBox(height: 2),
-                              Text(
-                                email.isNotEmpty ? email : 'Administrator',
-                                style: GoogleFonts.inter(
-                                  fontSize: 13,
-                                  color: Colors.white70,
-                                ),
+                              child: const Icon(
+                                Icons.admin_panel_settings_rounded,
+                                color: Colors.white,
+                                size: 34,
                               ),
-                              const SizedBox(height: 8),
-                              Row(
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 10, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white24,
-                                      borderRadius: BorderRadius.circular(14),
-                                    ),
-                                    child: Text(
-                                      role,
-                                      style: GoogleFonts.inter(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w800,
-                                        color: Colors.white,
-                                      ),
+                                  Text(
+                                    name,
+                                    style: GoogleFonts.inter(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w800,
+                                      color: Colors.white,
                                     ),
                                   ),
-                                  if (code.isNotEmpty) ...[
-                                    const SizedBox(width: 8),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 10, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFF59E0B),
-                                        borderRadius: BorderRadius.circular(14),
-                                      ),
-                                      child: Text(
-                                        'Code: $code',
-                                        style: GoogleFonts.inter(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w800,
-                                          color: Colors.white,
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    email.isNotEmpty ? email : 'Administrator',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 13,
+                                      color: Colors.white70,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 10, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white24,
+                                          borderRadius: BorderRadius.circular(14),
+                                        ),
+                                        child: Text(
+                                          role,
+                                          style: GoogleFonts.inter(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w800,
+                                            color: Colors.white,
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                  ],
+                                      if (code.isNotEmpty) ...[
+                                        const SizedBox(width: 8),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 10, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFF59E0B),
+                                            borderRadius: BorderRadius.circular(14),
+                                          ),
+                                          child: Text(
+                                            'Code: $code',
+                                            style: GoogleFonts.inter(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.w800,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
                                 ],
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                  ),
+                      ),
 
-                  const SizedBox(height: 20),
+                      const SizedBox(height: 20),
 
-                  // ── Personal Details Section ──
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
+                      // ── Personal Details Section ──
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'PERSONAL DETAILS',
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF64748B),
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                          TextButton.icon(
+                            onPressed: _handleEditProfile,
+                            icon: const Icon(Icons.edit_rounded, size: 16, color: Color(0xFF2563EB)),
+                            label: Text(
+                              'Edit',
+                              style: GoogleFonts.inter(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF2563EB),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                        ),
+                        child: Column(
+                          children: [
+                            _DetailTile(
+                              icon: Icons.person_outline_rounded,
+                              title: 'Full Name',
+                              value: name,
+                            ),
+                            const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                            _DetailTile(
+                              icon: Icons.email_outlined,
+                              title: 'Email Address',
+                              value: email.isNotEmpty ? email : 'N/A',
+                            ),
+                            const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                            _DetailTile(
+                              icon: Icons.phone_outlined,
+                              title: 'Phone Number',
+                              value: phone,
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // ── Account Settings Section ──
                       Text(
-                        'PERSONAL DETAILS',
+                        'ACCOUNT SETTINGS',
                         style: GoogleFonts.inter(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
@@ -463,259 +489,89 @@ class _AdminProfileScreenState extends ConsumerState<AdminProfileScreen> {
                           letterSpacing: 0.8,
                         ),
                       ),
-                      TextButton.icon(
-                        onPressed: _handleEditProfile,
-                        icon: const Icon(Icons.edit_rounded, size: 16, color: Color(0xFF2563EB)),
-                        label: Text(
-                          'Edit',
-                          style: GoogleFonts.inter(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: const Color(0xFF2563EB),
+                      const SizedBox(height: 10),
+
+                      _settingsTile(
+                        icon: Icons.lock_outline,
+                        title: 'Change Password',
+                        subtitle: 'Secure your account with a new password',
+                        onTap: () => ChangePasswordModal.show(context),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // ── Logout Action ──
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () => _confirmLogout(context),
+                          icon: const Icon(Icons.logout_rounded, color: Colors.white, size: 18),
+                          label: Text(
+                            'Sign Out of Admin Account',
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFDC2626),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 0,
                           ),
                         ),
                       ),
+                      const SizedBox(height: 24),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                ),
+    );
+  }
 
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
-                    ),
-                    child: Column(
-                      children: [
-                        _DetailTile(
-                          icon: Icons.person_outline_rounded,
-                          title: 'Full Name',
-                          value: name,
-                        ),
-                        const Divider(height: 1, color: Color(0xFFF1F5F9)),
-                        _DetailTile(
-                          icon: Icons.email_outlined,
-                          title: 'Email Address',
-                          value: email.isNotEmpty ? email : 'N/A',
-                        ),
-                        const Divider(height: 1, color: Color(0xFFF1F5F9)),
-                        _DetailTile(
-                          icon: Icons.phone_outlined,
-                          title: 'Phone Number',
-                          value: phone,
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // ── Change Password Section ──
-                  Text(
-                    'SECURITY & CHANGE PASSWORD',
-                    style: GoogleFonts.inter(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF64748B),
-                      letterSpacing: 0.8,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
-                    ),
-                    child: Form(
-                      key: _passwordFormKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Current Password',
-                            style: GoogleFonts.inter(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: const Color(0xFF334155),
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          TextFormField(
-                            controller: _currentPasswordController,
-                            obscureText: _obscureCurrent,
-                            validator: (val) => val == null || val.isEmpty
-                                ? 'Enter current password'
-                                : null,
-                            decoration: InputDecoration(
-                              hintText: 'Enter current password',
-                              filled: true,
-                              fillColor: const Color(0xFFF8FAFC),
-                              prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20),
-                              suffixIcon: IconButton(
-                                icon: Icon(_obscureCurrent
-                                    ? Icons.visibility_off_outlined
-                                    : Icons.visibility_outlined),
-                                onPressed: () => setState(
-                                    () => _obscureCurrent = !_obscureCurrent),
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-
-                          Text(
-                            'New Password',
-                            style: GoogleFonts.inter(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: const Color(0xFF334155),
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          TextFormField(
-                            controller: _newPasswordController,
-                            obscureText: _obscureNew,
-                            validator: (val) {
-                              if (val == null || val.isEmpty) return 'Enter new password';
-                              if (val.length < 8) return 'Password must be at least 8 characters';
-                              return null;
-                            },
-                            decoration: InputDecoration(
-                              hintText: 'Enter new password (min 8 chars)',
-                              filled: true,
-                              fillColor: const Color(0xFFF8FAFC),
-                              prefixIcon: const Icon(Icons.key_rounded, size: 20),
-                              suffixIcon: IconButton(
-                                icon: Icon(_obscureNew
-                                    ? Icons.visibility_off_outlined
-                                    : Icons.visibility_outlined),
-                                onPressed: () =>
-                                    setState(() => _obscureNew = !_obscureNew),
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-
-                          Text(
-                            'Confirm New Password',
-                            style: GoogleFonts.inter(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: const Color(0xFF334155),
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          TextFormField(
-                            controller: _confirmPasswordController,
-                            obscureText: _obscureConfirm,
-                            validator: (val) {
-                              if (val == null || val.isEmpty) return 'Confirm new password';
-                              if (val != _newPasswordController.text) return 'Passwords do not match';
-                              return null;
-                            },
-                            decoration: InputDecoration(
-                              hintText: 'Re-enter new password',
-                              filled: true,
-                              fillColor: const Color(0xFFF8FAFC),
-                              prefixIcon: const Icon(Icons.key_rounded, size: 20),
-                              suffixIcon: IconButton(
-                                icon: Icon(_obscureConfirm
-                                    ? Icons.visibility_off_outlined
-                                    : Icons.visibility_outlined),
-                                onPressed: () => setState(
-                                    () => _obscureConfirm = !_obscureConfirm),
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton.icon(
-                              onPressed: _isPasswordUpdating ? null : _handleChangePassword,
-                              icon: _isPasswordUpdating
-                                  ? const SizedBox(
-                                      width: 18,
-                                      height: 18,
-                                      child: CircularProgressIndicator(
-                                          strokeWidth: 2, color: Colors.white),
-                                    )
-                                  : const Icon(Icons.check_circle_rounded,
-                                      color: Colors.white, size: 18),
-                              label: Text(
-                                _isPasswordUpdating ? 'Updating...' : 'Update Password',
-                                style: GoogleFonts.inter(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF2563EB),
-                                padding: const EdgeInsets.symmetric(vertical: 14),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 28),
-
-                  // ── Logout Action ──
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () async {
-                        final storage = ref.read(secureStorageProvider);
-                        await storage.clearAll();
-                        if (widget.onLogout != null) {
-                          widget.onLogout!();
-                        } else if (mounted) {
-                          Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
-                        }
-                      },
-                      icon: const Icon(Icons.logout_rounded, color: Colors.white, size: 18),
-                      label: Text(
-                        'Sign Out of Admin Account',
-                        style: GoogleFonts.inter(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFDC2626),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 0,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                ],
-              ),
-            ),
+  Widget _settingsTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        leading: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: const Color(0xFFEFF6FF),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, color: const Color(0xFF2563EB), size: 20),
+        ),
+        title: Text(
+          title,
+          style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 15, color: const Color(0xFF0F172A)),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF64748B)),
+        ),
+        trailing: const Icon(Icons.chevron_right, color: Color(0xFF94A3B8), size: 22),
+        onTap: onTap,
+      ),
     );
   }
 }

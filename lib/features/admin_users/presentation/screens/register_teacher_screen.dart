@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../controllers/manage_users_providers.dart';
+import '../../../dashboard/presentation/controllers/dashboard_providers.dart';
 
 class RegisterTeacherScreen extends ConsumerStatefulWidget {
   const RegisterTeacherScreen({super.key});
@@ -48,8 +49,9 @@ class _RegisterTeacherScreenState
             backgroundColor: Color(0xFF16A34A),
           ),
         );
-        // Refresh users list
+        // Refresh users list and admin dashboard metrics
         ref.read(manageUsersNotifierProvider.notifier).fetchUsers();
+        ref.read(adminDashboardNotifierProvider.notifier).fetchDashboard();
         Navigator.pop(context);
       }
     } catch (e) {

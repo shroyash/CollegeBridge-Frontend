@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/storage/secure_storage_service.dart';
-
 import '../controllers/dashboard_providers.dart';
 import '../controllers/dashboard_state.dart';
 import '../../domain/entities/dashboard_metric.dart';
@@ -10,13 +8,12 @@ import '../widgets/metric_card.dart';
 import '../widgets/quick_action_tile.dart';
 
 import '../../../admin_users/presentation/screens/manage_users_screen.dart';
+import '../../../admin_users/presentation/screens/register_teacher_screen.dart';
 import '../../../institution_admin/presentation/screens/academic_management_screen.dart';
 import '../../../institution_admin/presentation/screens/admin_profile_screen.dart';
 import '../../../institution_admin/presentation/screens/institution_profile_screen.dart';
 import '../../../institution_admin/presentation/screens/manage_classes_screen.dart';
 import '../../../institution_admin/presentation/screens/student_management_screen.dart';
-import '../../../institution_admin/presentation/widgets/assign_subject_dialog.dart';
-import '../../../institution_admin/presentation/widgets/teacher_registration_dialog.dart';
 
 import '../../../auth/presentation/controllers/institution_provider.dart';
 
@@ -149,6 +146,21 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                                     const SizedBox(height: 16),
 
                                     QuickActionTile(
+                                      title: 'Manage Academic Structure',
+                                      icon: Icons.school_outlined,
+                                      iconColor: const Color(0xFF9333EA),
+                                      iconBackgroundColor: const Color(0xFFF3E8FF),
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => const AcademicManagementScreen(),
+                                          ),
+                                        );
+                                      },
+                                    ),
+
+                                    QuickActionTile(
                                       title: 'Manage Classes',
                                       icon: Icons.class_outlined,
                                       iconColor: const Color(0xFF2563EB),
@@ -168,59 +180,39 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                                       icon: Icons.person_add_alt_1_outlined,
                                       iconColor: const Color(0xFF10B981),
                                       iconBackgroundColor: const Color(0xFFD1FAE5),
-                                      onTap: () {
-                                        showDialog(
-                                          context: context,
-                                          builder: (_) => const TeacherRegistrationDialog(),
+                                      onTap: () async {
+                                        await Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => const RegisterTeacherScreen(),
+                                          ),
                                         );
+                                        if (context.mounted) {
+                                          ref.read(adminDashboardNotifierProvider.notifier).fetchDashboard();
+                                        }
                                       },
                                     ),
 
                                     QuickActionTile(
-                                      title: 'Assign Subject to Teacher',
+                                      title: 'Assign Subjects to Teachers',
                                       icon: Icons.assignment_ind_outlined,
                                       iconColor: const Color(0xFF8B5CF6),
                                       iconBackgroundColor: const Color(0xFFF5F3FF),
-                                      onTap: () {
-                                        showDialog(
-                                          context: context,
-                                          builder: (_) => const AssignSubjectDialog(),
-                                        );
-                                      },
-                                    ),
-
-                                    QuickActionTile(
-                                      title: 'Institution Profile',
-                                      icon: Icons.business_rounded,
-                                      iconColor: const Color(0xFF2563EB),
-                                      iconBackgroundColor: const Color(0xFFDBEAFE),
-                                      onTap: () {
-                                        Navigator.push(
+                                      onTap: () async {
+                                        await Navigator.push(
                                           context,
                                           MaterialPageRoute(
-                                            builder: (context) => const InstitutionProfileScreen(),
+                                            builder: (context) => const ManageUsersScreen(),
                                           ),
                                         );
+                                        if (context.mounted) {
+                                          ref.read(adminDashboardNotifierProvider.notifier).fetchDashboard();
+                                        }
                                       },
                                     ),
 
                                     QuickActionTile(
-                                      title: 'Academic & Subjects',
-                                      icon: Icons.school_outlined,
-                                      iconColor: const Color(0xFF9333EA),
-                                      iconBackgroundColor: const Color(0xFFF3E8FF),
-                                      onTap: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) => const AcademicManagementScreen(),
-                                          ),
-                                        );
-                                      },
-                                    ),
-
-                                    QuickActionTile(
-                                      title: 'Student Cohorts & Transfer',
+                                      title: 'Student Cohort & Transfer',
                                       icon: Icons.swap_horiz_rounded,
                                       iconColor: const Color(0xFF16A34A),
                                       iconBackgroundColor: const Color(0xFFDCFCE7),
@@ -229,6 +221,21 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                                           context,
                                           MaterialPageRoute(
                                             builder: (context) => const StudentManagementScreen(),
+                                          ),
+                                        );
+                                      },
+                                    ),
+
+                                    QuickActionTile(
+                                      title: 'Institution Profile',
+                                      icon: Icons.business_rounded,
+                                      iconColor: const Color(0xFF0284C7),
+                                      iconBackgroundColor: const Color(0xFFE0F2FE),
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => const InstitutionProfileScreen(),
                                           ),
                                         );
                                       },
@@ -249,14 +256,17 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
         selectedItemColor: const Color(0xFF2563EB),
         unselectedItemColor: const Color(0xFF64748B),
         showUnselectedLabels: true,
-        onTap: (index) {
+        onTap: (index) async {
           if (index == 2) {
-            Navigator.push(
+            await Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (context) => const ManageUsersScreen(),
               ),
             );
+            if (context.mounted) {
+              ref.read(adminDashboardNotifierProvider.notifier).fetchDashboard();
+            }
           } else if (index == 3) {
             Navigator.push(
               context,

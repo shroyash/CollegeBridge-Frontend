@@ -6,6 +6,9 @@ import 'package:image_picker/image_picker.dart';
 
 import '../controllers/dashboard_providers.dart';
 import '../controllers/profile_notifier.dart';
+import '../widgets/change_email_modal.dart';
+import '../widgets/change_password_modal.dart';
+import 'help_and_support_screen.dart';
 
 class TeacherProfileScreen extends ConsumerStatefulWidget {
   final int totalClasses;
@@ -211,20 +214,23 @@ class _TeacherProfileScreenState extends ConsumerState<TeacherProfileScreen> {
           _settingsTile(
             icon: Icons.email_outlined,
             title: 'Change Email',
-            subtitle: 'Update your primary contact address',
-            onTap: () {},
+            subtitle: p.email,
+            onTap: () => ChangeEmailModal.show(context, p.email),
           ),
           _settingsTile(
             icon: Icons.lock_outline,
             title: 'Change Password',
             subtitle: 'Secure your account with a new password',
-            onTap: () {},
+            onTap: () => ChangePasswordModal.show(context),
           ),
           _settingsTile(
             icon: Icons.help_outline,
             title: 'Help & Support',
             subtitle: 'FAQs and direct campus support',
-            onTap: () {},
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const HelpAndSupportScreen()),
+            ),
           ),
           const SizedBox(height: 20),
 
@@ -386,12 +392,13 @@ class _TeacherProfileScreenState extends ConsumerState<TeacherProfileScreen> {
               child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () async {
+              final messenger = ScaffoldMessenger.of(context);
               Navigator.pop(ctx);
               final ok = await ref
                   .read(profileNotifierProvider.notifier)
                   .updateName(controller.text.trim());
               if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                messenger.showSnackBar(SnackBar(
                   content: Text(ok
                       ? 'Profile updated!'
                       : 'Failed to update profile'),

@@ -44,9 +44,7 @@ class AuthInterceptor extends Interceptor {
     const publicPaths = [
       '/api/auth/login',
       '/api/auth/register',
-      '/api/auth/forgot-password',
-      '/api/auth/verify-otp',
-      '/api/auth/reset-password',
+      '/api/auth/password/',
       '/api/auth/refresh',
       '/api/institutions/register',
     ];

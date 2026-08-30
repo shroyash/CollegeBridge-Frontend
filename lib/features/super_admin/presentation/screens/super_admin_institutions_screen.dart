@@ -186,6 +186,8 @@ class _SuperAdminInstitutionsScreenState
                                         state.pendingInstitutions[index];
                                     return _PendingInstitutionCard(
                                       institution: inst,
+                                      onViewDetails: () => _showPendingDetailModal(
+                                          context, inst, notifier),
                                       onApprove: () => _confirmApprove(
                                           context, notifier, inst),
                                       onReject: () =>
@@ -352,6 +354,21 @@ class _SuperAdminInstitutionsScreenState
     );
   }
 
+  void _showPendingDetailModal(
+      BuildContext context,
+      SuperAdminPendingInstitution inst,
+      SuperAdminInstitutionsNotifier notifier) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _PendingDetailModal(
+        institution: inst,
+        onApprove: () => _confirmApprove(context, notifier, inst),
+        onReject: () => _confirmReject(context, notifier, inst),
+      ),
+    );
+  }
 
   void _showToast(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -617,11 +634,13 @@ class _AllInstitutionCard extends StatelessWidget {
 
 class _PendingInstitutionCard extends StatelessWidget {
   final SuperAdminPendingInstitution institution;
+  final VoidCallback onViewDetails;
   final VoidCallback onApprove;
   final VoidCallback onReject;
 
   const _PendingInstitutionCard({
     required this.institution,
+    required this.onViewDetails,
     required this.onApprove,
     required this.onReject,
   });
@@ -630,77 +649,312 @@ class _PendingInstitutionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 3),
           )
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+      child: InkWell(
+        onTap: onViewDetails,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFF7ED),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(Icons.pending_actions_rounded,
-                    color: Color(0xFFF97316), size: 22),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      institution.institutionName,
-                      style: GoogleFonts.inter(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF0F172A),
-                      ),
+              Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF7ED),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    Text(
-                      institution.contactPerson != null
-                          ? 'Contact: ${institution.contactPerson}'
-                          : 'Location: ${institution.location}',
+                    child: const Icon(Icons.pending_actions_rounded,
+                        color: Color(0xFFF97316), size: 22),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          institution.institutionName,
+                          style: GoogleFonts.inter(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF0F172A),
+                          ),
+                        ),
+                        Text(
+                          institution.contactPerson != null
+                              ? 'Contact: ${institution.contactPerson}'
+                              : 'Location: ${institution.location}',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            color: const Color(0xFF64748B),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const _Badge(status: 'PENDING'),
+                ],
+              ),
+              const SizedBox(height: 12),
+              const Divider(height: 1, color: Color(0xFFF1F5F9)),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: onViewDetails,
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0xFFE2E8F0)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    ),
+                    icon: const Icon(Icons.info_outline_rounded,
+                        size: 14, color: Color(0xFF2563EB)),
+                    label: Text(
+                      'View Details',
                       style: GoogleFonts.inter(
                         fontSize: 12,
-                        color: const Color(0xFF64748B),
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF2563EB),
                       ),
                     ),
-                  ],
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: onReject,
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Color(0xFFFECDD3)),
+                        backgroundColor: const Color(0xFFFFF1F2),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                      ),
+                      child: Text(
+                        'Reject',
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFFEF4444),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: onApprove,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF10B981),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                      ),
+                      child: Text(
+                        'Approve',
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PendingDetailModal extends StatelessWidget {
+  final SuperAdminPendingInstitution institution;
+  final VoidCallback onApprove;
+  final VoidCallback onReject;
+
+  const _PendingDetailModal({
+    required this.institution,
+    required this.onApprove,
+    required this.onReject,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final inst = institution;
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE2E8F0),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  inst.institutionName,
+                  style: GoogleFonts.inter(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF0F172A),
+                  ),
                 ),
               ),
               const _Badge(status: 'PENDING'),
             ],
           ),
-          const SizedBox(height: 12),
-          const Divider(height: 1, color: Color(0xFFF1F5F9)),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
+          const Divider(height: 1, color: Color(0xFFE2E8F0)),
+          const SizedBox(height: 16),
+          _DetailInfoRow('Institution Code', inst.code ?? 'N/A'),
+          _DetailInfoRow('Contact Person', inst.contactPerson ?? 'N/A'),
+          _DetailInfoRow('Contact Email', inst.email ?? 'N/A'),
+          _DetailInfoRow('Location', inst.location),
+          if (inst.website != null && inst.website!.isNotEmpty)
+            _DetailInfoRow('Website', inst.website!),
+          if (inst.submittedAt != null)
+            _DetailInfoRow('Submitted At', inst.submittedAt!),
+          const SizedBox(height: 16),
+          Text(
+            'Verification Documents (${inst.documents.length})',
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF0F172A),
+            ),
+          ),
+          const SizedBox(height: 8),
+          if (inst.documents.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline, size: 16, color: Color(0xFF94A3B8)),
+                  const SizedBox(width: 8),
+                  Text(
+                    'No verification documents attached.',
+                    style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF64748B)),
+                  ),
+                ],
+              ),
+            )
+          else
+            Column(
+              children: inst.documents.map((doc) {
+                final isImage = doc.documentUrl.toLowerCase().endsWith('.jpg') ||
+                    doc.documentUrl.toLowerCase().endsWith('.jpeg') ||
+                    doc.documentUrl.toLowerCase().endsWith('.png') ||
+                    doc.documentUrl.toLowerCase().startsWith('http');
+                return InkWell(
+                  onTap: () => _openDocument(context, doc),
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEFF6FF),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(
+                            isImage ? Icons.image_rounded : Icons.description_rounded,
+                            size: 20,
+                            color: const Color(0xFF2563EB),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                doc.documentType,
+                                style: GoogleFonts.inter(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF1E293B),
+                                ),
+                              ),
+                              Text(
+                                isImage ? 'Tap to preview document' : doc.documentUrl,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.inter(
+                                  fontSize: 11,
+                                  color: const Color(0xFF64748B),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(Icons.open_in_new_rounded,
+                            size: 16, color: Color(0xFF2563EB)),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          const SizedBox(height: 24),
           Row(
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: onReject,
+                  onPressed: () {
+                    Navigator.pop(context);
+                    onReject();
+                  },
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: Color(0xFFFECDD3)),
                     backgroundColor: const Color(0xFFFFF1F2),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10)),
                   ),
                   child: Text(
-                    'Reject',
+                    'Reject Registration',
                     style: GoogleFonts.inter(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
@@ -712,15 +966,19 @@ class _PendingInstitutionCard extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: onApprove,
+                  onPressed: () {
+                    Navigator.pop(context);
+                    onApprove();
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF10B981),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10)),
                   ),
                   child: Text(
-                    'Approve',
+                    'Approve Institution',
                     style: GoogleFonts.inter(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
@@ -731,11 +989,127 @@ class _PendingInstitutionCard extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: 12),
+        ],
+      ),
+    );
+  }
+
+  void _openDocument(BuildContext context, PendingDocument doc) {
+    final url = doc.documentUrl.toLowerCase();
+    final isImage = url.endsWith('.jpg') ||
+        url.endsWith('.jpeg') ||
+        url.endsWith('.png') ||
+        url.startsWith('http');
+
+    if (isImage) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => _DocumentImageViewerScreen(
+            url: doc.documentUrl,
+            title: doc.documentType,
+          ),
+        ),
+      );
+    } else {
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(doc.documentType,
+              style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
+          content: SelectableText('Document URL:\n${doc.documentUrl}'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Close'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+}
+
+class _DocumentImageViewerScreen extends StatelessWidget {
+  final String url;
+  final String title;
+
+  const _DocumentImageViewerScreen({required this.url, required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        iconTheme: const IconThemeData(color: Colors.white),
+        title: Text(
+          title,
+          style: GoogleFonts.inter(color: Colors.white, fontSize: 15),
+        ),
+      ),
+      body: Center(
+        child: InteractiveViewer(
+          child: url.startsWith('http')
+              ? Image.network(
+                  url,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => const Icon(
+                    Icons.broken_image_rounded,
+                    color: Colors.white54,
+                    size: 64,
+                  ),
+                )
+              : const Icon(
+                  Icons.broken_image_rounded,
+                  color: Colors.white54,
+                  size: 64,
+                ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DetailInfoRow extends StatelessWidget {
+  final String label;
+  final String value;
+  const _DetailInfoRow(this.label, this.value);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(
+              label,
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                color: const Color(0xFF94A3B8),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                color: const Color(0xFF1E293B),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 }
+
 
 class _Badge extends StatelessWidget {
   final String status;

@@ -1,5 +1,4 @@
 import '../../domain/entities/auth_user.dart';
-import '../../domain/entities/faculty.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../datasources/auth_remote_datasource.dart';
 
@@ -30,16 +29,14 @@ class AuthRepositoryImpl implements AuthRepository {
     required String name,
     required String email,
     required String password,
-    required Faculty faculty,
-    required int semester,
+    required int levelId,
   }) async {
     final model = await _remoteDataSource.register(
       institutionCode: institutionCode,
       name: name,
       email: email,
       password: password,
-      faculty: faculty,
-      semester: semester,
+      levelId: levelId,
     );
     return model;
   }

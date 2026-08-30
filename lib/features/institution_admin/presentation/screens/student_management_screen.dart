@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../data/datasources/student_admin_remote_datasource.dart';
 import '../../data/datasources/academic_admin_remote_datasource.dart';
-import '../../data/models/academic_class_model.dart';
+import '../../data/models/academic_level_model.dart';
 import '../controllers/student_management_providers.dart';
 import '../controllers/academic_management_providers.dart';
 
@@ -572,21 +572,26 @@ class _BulkTransferDialog extends ConsumerStatefulWidget {
 }
 
 class _BulkTransferDialogState extends ConsumerState<_BulkTransferDialog> {
-  List<AcademicClassModel> _classes = [];
+  List<AcademicLevelModel> _levels = [];
   bool _loadingClasses = true;
-  AcademicClassModel? _targetClass;
+  AcademicLevelModel? _targetLevel;
   bool _confirming = false;
 
   @override
   void initState() {
     super.initState();
-    _loadClasses();
+    _loadLevels();
   }
 
-  Future<void> _loadClasses() async {
+  Future<void> _loadLevels() async {
     try {
-      final classes = await widget.dataSource.getAcademicClasses();
-      if (mounted) setState(() { _classes = classes; _loadingClasses = false; });
+      final programs = await widget.dataSource.getPrograms();
+      final List<AcademicLevelModel> allLevels = [];
+      for (final p in programs) {
+        final lvls = await widget.dataSource.getLevels(programId: p.programId);
+        allLevels.addAll(lvls);
+      }
+      if (mounted) setState(() { _levels = allLevels; _loadingClasses = false; });
     } catch (_) {
       if (mounted) setState(() => _loadingClasses = false);
     }
@@ -629,16 +634,16 @@ class _BulkTransferDialogState extends ConsumerState<_BulkTransferDialog> {
           ? const SizedBox(
               height: 80,
               child: Center(child: CircularProgressIndicator()))
-          : _classes.isEmpty
+          : _levels.isEmpty
               ? Text(
-                  'No academic classes found. Please create academic classes first.',
+                  'No academic levels found. Please create academic levels first.',
                   style: GoogleFonts.inter(
                       fontSize: 13, color: const Color(0xFFDC2626)))
               : Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Select Target Class:',
+                    Text('Select Target Level:',
                         style: GoogleFonts.inter(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
@@ -652,28 +657,28 @@ class _BulkTransferDialogState extends ConsumerState<_BulkTransferDialog> {
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: DropdownButtonHideUnderline(
-                        child: DropdownButton<AcademicClassModel>(
-                          value: _targetClass,
+                        child: DropdownButton<AcademicLevelModel>(
+                          value: _targetLevel,
                           isExpanded: true,
-                          hint: Text('Choose target class...',
+                          hint: Text('Choose target level...',
                               style: GoogleFonts.inter(
                                   color: const Color(0xFF94A3B8),
                                   fontSize: 13)),
-                          items: _classes
+                          items: _levels
                               .map((c) => DropdownMenuItem(
                                     value: c,
                                     child: Text(
-                                      c.displayName,
+                                      '${c.programName} - ${c.name}',
                                       style: GoogleFonts.inter(fontSize: 13),
                                     ),
                                   ))
                               .toList(),
                           onChanged: (v) =>
-                              setState(() => _targetClass = v),
+                              setState(() => _targetLevel = v),
                         ),
                       ),
                     ),
-                    if (_targetClass != null) ...[
+                    if (_targetLevel != null) ...[
                       const SizedBox(height: 12),
                       Container(
                         padding: const EdgeInsets.all(12),
@@ -684,8 +689,8 @@ class _BulkTransferDialogState extends ConsumerState<_BulkTransferDialog> {
                               Border.all(color: const Color(0xFFFDE68A)),
                         ),
                         child: Text(
-                          '⚠️ ${widget.selectedCount} student(s) will be moved from $currentLabel to ${_targetClass!.displayName}. '
-                          'Their existing subject enrollments will be replaced with subjects of the target class.',
+                          '⚠️ ${widget.selectedCount} student(s) will be moved from $currentLabel to ${_targetLevel!.programName} ${_targetLevel!.name}. '
+                          'Their existing subject enrollments will be replaced with subjects of the target level.',
                           style: GoogleFonts.inter(
                               fontSize: 12,
                               color: const Color(0xFF92400E)),
@@ -701,12 +706,12 @@ class _BulkTransferDialogState extends ConsumerState<_BulkTransferDialog> {
               style: GoogleFonts.inter(color: const Color(0xFF64748B))),
         ),
         ElevatedButton(
-          onPressed: (_targetClass == null || _confirming)
+          onPressed: (_targetLevel == null || _confirming)
               ? null
               : () async {
                   setState(() => _confirming = true);
                   await widget.onConfirm(
-                      _targetClass!.classId, _targetClass!.displayName);
+                      _targetLevel!.levelId, '${_targetLevel!.programName} ${_targetLevel!.name}');
                 },
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF2563EB),

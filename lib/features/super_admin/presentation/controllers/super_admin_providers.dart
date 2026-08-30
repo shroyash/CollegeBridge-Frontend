@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/storage/secure_storage_service.dart';
-import '../../../auth/presentation/controllers/auth_providers.dart' hide secureStorageProvider;
+import '../../../auth/presentation/controllers/auth_providers.dart';
 import '../../data/datasources/super_admin_remote_datasource.dart';
 import '../../domain/entities/super_admin_models.dart';
 

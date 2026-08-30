@@ -5,6 +5,8 @@ import '../../../../core/network/api_client.dart';
 import '../../../../core/storage/secure_storage_service.dart';
 import '../../../dashboard/data/models/subject_model.dart';
 import '../models/academic_class_model.dart';
+import '../models/academic_level_model.dart';
+import '../models/academic_program_model.dart';
 import '../models/class_detail_model.dart';
 
 class AcademicAdminRemoteDataSource {
@@ -51,38 +53,21 @@ class AcademicAdminRemoteDataSource {
     return '';
   }
 
-  /// GET /api/admin/academic/faculties
-  Future<List<String>> getSupportedFaculties() async {
+  // ── Programs (formerly faculties) ─────────────────────────────────────────
+
+  /// GET /api/admin/academic/programs
+  Future<List<AcademicProgramModel>> getPrograms() async {
     try {
       final options = await _authOptions();
       final response = await _apiClient.get<Map<String, dynamic>>(
-        ApiConstants.adminAcademicFaculties,
-        options: options,
-      );
-
-      final data = response.data?['data'];
-      if (data is List) {
-        return data.map((e) => e.toString()).toList();
-      }
-      return ['BCA', 'BBA', 'BSC_CSIT', 'BIM', 'BHM'];
-    } on DioException catch (e) {
-      throw _mapDioException(e);
-    }
-  }
-
-  /// GET /api/admin/academic/classes
-  Future<List<AcademicClassModel>> getAcademicClasses() async {
-    try {
-      final options = await _authOptions();
-      final response = await _apiClient.get<Map<String, dynamic>>(
-        ApiConstants.adminAcademicClasses,
+        ApiConstants.adminAcademicPrograms,
         options: options,
       );
 
       final data = response.data?['data'];
       if (data is List) {
         return data
-            .map((e) => AcademicClassModel.fromJson(e as Map<String, dynamic>))
+            .map((e) => AcademicProgramModel.fromJson(e as Map<String, dynamic>))
             .toList();
       }
       return [];
@@ -91,46 +76,109 @@ class AcademicAdminRemoteDataSource {
     }
   }
 
-  /// POST /api/admin/academic/classes
-  Future<AcademicClassModel> createAcademicClass({
-    required String faculty,
-    required int semester,
-    String? displayName,
+  /// POST /api/admin/academic/programs
+  Future<AcademicProgramModel> createProgram({
+    required String name,
+    required String code,
   }) async {
     try {
       final options = await _authOptions();
       final response = await _apiClient.post<Map<String, dynamic>>(
-        ApiConstants.adminAcademicClasses,
-        data: {
-          'faculty': faculty,
-          'semester': semester,
-          if (displayName != null && displayName.isNotEmpty)
-            'displayName': displayName,
-        },
+        ApiConstants.adminAcademicPrograms,
+        data: {'name': name, 'code': code},
         options: options,
       );
 
       final data = response.data?['data'] as Map<String, dynamic>? ?? {};
-      return AcademicClassModel.fromJson(data);
+      return AcademicProgramModel.fromJson(data);
     } on DioException catch (e) {
       throw _mapDioException(e);
     }
   }
 
-  /// GET /api/admin/academic/subjects?faculty={faculty}&semester={semester}
-  Future<List<SubjectModel>> getSubjects({
-    String? faculty,
-    int? semester,
+  /// DELETE /api/admin/academic/programs/{programId}
+  Future<void> deleteProgram(int programId) async {
+    try {
+      final options = await _authOptions();
+      await _apiClient.dio.delete<dynamic>(
+        '${ApiConstants.adminAcademicPrograms}/$programId',
+        options: options,
+      );
+    } on DioException catch (e) {
+      throw _mapDioException(e);
+    }
+  }
+
+  // ── Levels (formerly semesters/classes) ───────────────────────────────────
+
+  /// GET /api/admin/academic/programs/{programId}/levels
+  Future<List<AcademicLevelModel>> getLevels({required int programId}) async {
+    try {
+      final options = await _authOptions();
+      final response = await _apiClient.get<Map<String, dynamic>>(
+        '${ApiConstants.adminAcademicPrograms}/$programId/levels',
+        options: options,
+      );
+
+      final data = response.data?['data'];
+      if (data is List) {
+        return data
+            .map((e) => AcademicLevelModel.fromJson(e as Map<String, dynamic>))
+            .toList();
+      }
+      return [];
+    } on DioException catch (e) {
+      throw _mapDioException(e);
+    }
+  }
+
+  /// POST /api/admin/academic/programs/{programId}/levels
+  Future<AcademicLevelModel> createLevel({
+    required int programId,
+    required int levelNumber,
+    required String name,
+    required String type,
   }) async {
     try {
       final options = await _authOptions();
+      final response = await _apiClient.post<Map<String, dynamic>>(
+        '${ApiConstants.adminAcademicPrograms}/$programId/levels',
+        data: {
+          'levelNumber': levelNumber,
+          'name': name,
+          'type': type,
+        },
+        options: options,
+      );
+
+      final data = response.data?['data'] as Map<String, dynamic>? ?? {};
+      return AcademicLevelModel.fromJson(data);
+    } on DioException catch (e) {
+      throw _mapDioException(e);
+    }
+  }
+
+  /// DELETE /api/admin/academic/levels/{levelId}
+  Future<void> deleteLevel(int levelId) async {
+    try {
+      final options = await _authOptions();
+      await _apiClient.dio.delete<dynamic>(
+        '${ApiConstants.adminAcademicLevels}/$levelId',
+        options: options,
+      );
+    } on DioException catch (e) {
+      throw _mapDioException(e);
+    }
+  }
+
+  // ── Subjects ──────────────────────────────────────────────────────────────
+
+  /// GET /api/admin/academic/subjects?levelId={id}
+  Future<List<SubjectModel>> getSubjects({int? levelId}) async {
+    try {
+      final options = await _authOptions();
       final queryParams = <String, dynamic>{};
-      if (faculty != null && faculty.isNotEmpty) {
-        queryParams['faculty'] = faculty;
-      }
-      if (semester != null) {
-        queryParams['semester'] = semester;
-      }
+      if (levelId != null) queryParams['levelId'] = levelId;
 
       final response = await _apiClient.get<Map<String, dynamic>>(
         ApiConstants.adminAcademicSubjects,
@@ -153,9 +201,9 @@ class AcademicAdminRemoteDataSource {
   /// POST /api/admin/academic/subjects
   Future<SubjectModel> createSubject({
     required String name,
-    required String faculty,
-    required int semester,
-    required int creditHours,
+    required int levelId,
+    String? code,
+    int creditHours = 3,
   }) async {
     try {
       final options = await _authOptions();
@@ -163,8 +211,8 @@ class AcademicAdminRemoteDataSource {
         ApiConstants.adminAcademicSubjects,
         data: {
           'name': name,
-          'faculty': faculty,
-          'semester': semester,
+          'levelId': levelId,
+          if (code != null && code.isNotEmpty) 'code': code,
           'creditHours': creditHours,
         },
         options: options,
@@ -177,70 +225,12 @@ class AcademicAdminRemoteDataSource {
     }
   }
 
-  /// POST /api/admin/academic/subjects/batch
-  Future<List<SubjectModel>> batchCreateSubjects({
-    required String faculty,
-    required int semester,
-    required List<Map<String, dynamic>> subjects,
-  }) async {
-    try {
-      final options = await _authOptions();
-      final response = await _apiClient.post<Map<String, dynamic>>(
-        ApiConstants.adminAcademicSubjectsBatch,
-        data: {
-          'faculty': faculty,
-          'semester': semester,
-          'subjects': subjects,
-        },
-        options: options,
-      );
-
-      final data = response.data?['data'];
-      if (data is List) {
-        return data
-            .map((e) => SubjectModel.fromJson(e as Map<String, dynamic>))
-            .toList();
-      }
-      return [];
-    } on DioException catch (e) {
-      throw _mapDioException(e);
-    }
-  }
-
-  /// PUT /api/admin/academic/classes/{classId}
-  Future<AcademicClassModel> updateAcademicClass({
-    required int classId,
-    required String faculty,
-    required int semester,
-    String? displayName,
-  }) async {
-    try {
-      final options = await _authOptions();
-      final response = await _apiClient.dio.put<Map<String, dynamic>>(
-        '${ApiConstants.adminAcademicClasses}/$classId',
-        data: {
-          'faculty': faculty,
-          'semester': semester,
-          if (displayName != null && displayName.isNotEmpty)
-            'displayName': displayName,
-        },
-        options: options,
-      );
-
-      final data = response.data?['data'] as Map<String, dynamic>? ?? {};
-      return AcademicClassModel.fromJson(data);
-    } on DioException catch (e) {
-      throw _mapDioException(e);
-    }
-  }
-
   /// PUT /api/admin/academic/subjects/{subjectId}
   Future<SubjectModel> updateSubject({
     required int subjectId,
     required String name,
-    required String faculty,
-    required int semester,
-    required int creditHours,
+    String? code,
+    int creditHours = 3,
   }) async {
     try {
       final options = await _authOptions();
@@ -248,8 +238,7 @@ class AcademicAdminRemoteDataSource {
         '${ApiConstants.adminAcademicSubjects}/$subjectId',
         data: {
           'name': name,
-          'faculty': faculty,
-          'semester': semester,
+          if (code != null && code.isNotEmpty) 'code': code,
           'creditHours': creditHours,
         },
         options: options,
@@ -275,35 +264,26 @@ class AcademicAdminRemoteDataSource {
     }
   }
 
-  /// GET /api/admin/academic/classes filtered
-  Future<List<AcademicClassModel>> getAcademicClassesFiltered({
-    String? faculty,
-    int? semester,
-    String? search,
+  /// POST /api/admin/academic/subjects/batch
+  Future<List<SubjectModel>> batchCreateSubjects({
+    required int levelId,
+    required List<Map<String, dynamic>> subjects,
   }) async {
     try {
       final options = await _authOptions();
-      final queryParams = <String, dynamic>{};
-      if (faculty != null && faculty.isNotEmpty && faculty != 'ALL') {
-        queryParams['faculty'] = faculty;
-      }
-      if (semester != null) {
-        queryParams['semester'] = semester;
-      }
-      if (search != null && search.trim().isNotEmpty) {
-        queryParams['search'] = search.trim();
-      }
-
-      final response = await _apiClient.get<Map<String, dynamic>>(
-        ApiConstants.adminAcademicClasses,
-        queryParameters: queryParams,
+      final response = await _apiClient.post<Map<String, dynamic>>(
+        ApiConstants.adminAcademicSubjectsBatch,
+        data: {
+          'levelId': levelId,
+          'subjects': subjects,
+        },
         options: options,
       );
 
       final data = response.data?['data'];
       if (data is List) {
         return data
-            .map((e) => AcademicClassModel.fromJson(e as Map<String, dynamic>))
+            .map((e) => SubjectModel.fromJson(e as Map<String, dynamic>))
             .toList();
       }
       return [];
@@ -312,15 +292,84 @@ class AcademicAdminRemoteDataSource {
     }
   }
 
-  /// GET /api/admin/academic/classes/{classId}/details
+  // ── Backward Compatibility Helpers for Legacy Screens ──────────────────────
+
+  Future<List<String>> getSupportedFaculties() async {
+    try {
+      final programs = await getPrograms();
+      return programs.map((p) => p.code).toList();
+    } catch (_) {
+      return ['BCA', 'BBA', 'BIM', 'BSC_CSIT', 'BE_CIVIL'];
+    }
+  }
+
+  Future<List<AcademicClassModel>> getAcademicClasses() async {
+    try {
+      final programs = await getPrograms();
+      final List<AcademicClassModel> result = [];
+      for (final p in programs) {
+        final levels = await getLevels(programId: p.programId);
+        for (final l in levels) {
+          result.add(AcademicClassModel(
+            classId: l.levelId,
+            displayName: '${p.code} - ${l.name}',
+            faculty: p.code,
+            semester: l.levelNumber,
+            totalStudents: 0,
+          ));
+        }
+      }
+      return result;
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<List<AcademicClassModel>> getAcademicClassesFiltered({
+    String? faculty,
+    int? semester,
+    String? search,
+  }) =>
+      getAcademicClasses();
+
+  Future<AcademicClassModel> createAcademicClass({
+    required String faculty,
+    required int semester,
+    String? displayName,
+  }) async {
+    final programs = await getPrograms();
+    AcademicProgramModel prog = programs.firstWhere(
+      (p) => p.code == faculty,
+      orElse: () => programs.isNotEmpty
+          ? programs.first
+          : AcademicProgramModel(programId: 1, name: faculty, code: faculty),
+    );
+    final level = await createLevel(
+      programId: prog.programId,
+      levelNumber: semester,
+      name: displayName ?? 'Semester $semester',
+      type: 'SEMESTER',
+    );
+    return AcademicClassModel(
+      classId: level.levelId,
+      displayName: level.name,
+      faculty: prog.code,
+      semester: level.levelNumber,
+      totalStudents: 0,
+    );
+  }
+
+  Future<void> assignClassTeacher(int classId, int teacherId) async {
+    // No-op or log for backward compatibility
+  }
+
   Future<ClassDetailModel> getClassDetails(int classId) async {
     try {
       final options = await _authOptions();
       final response = await _apiClient.get<Map<String, dynamic>>(
-        '${ApiConstants.adminAcademicClasses}/$classId/details',
+        '/api/admin/academic/classes/$classId/details',
         options: options,
       );
-
       final data = response.data?['data'] as Map<String, dynamic>? ?? {};
       return ClassDetailModel.fromJson(data);
     } on DioException catch (e) {
@@ -328,28 +377,11 @@ class AcademicAdminRemoteDataSource {
     }
   }
 
-  /// POST /api/admin/academic/classes/{classId}/students/{studentId}
-  Future<ClassStudentModel> addStudentToClass(int classId, int studentId) async {
-    try {
-      final options = await _authOptions();
-      final response = await _apiClient.post<Map<String, dynamic>>(
-        '${ApiConstants.adminAcademicClasses}/$classId/students/$studentId',
-        options: options,
-      );
-
-      final data = response.data?['data'] as Map<String, dynamic>? ?? {};
-      return ClassStudentModel.fromJson(data);
-    } on DioException catch (e) {
-      throw _mapDioException(e);
-    }
-  }
-
-  /// DELETE /api/admin/academic/classes/{classId}/students/{studentId}
   Future<void> removeStudentFromClass(int classId, int studentId) async {
     try {
       final options = await _authOptions();
       await _apiClient.dio.delete<dynamic>(
-        '${ApiConstants.adminAcademicClasses}/$classId/students/$studentId',
+        '/api/admin/academic/classes/$classId/students/$studentId',
         options: options,
       );
     } on DioException catch (e) {
@@ -357,31 +389,13 @@ class AcademicAdminRemoteDataSource {
     }
   }
 
-  /// PUT /api/admin/academic/classes/{classId}/class-teacher/{teacherId}
-  Future<AcademicClassModel> assignClassTeacher(int classId, int teacherId) async {
-    try {
-      final options = await _authOptions();
-      final response = await _apiClient.dio.put<Map<String, dynamic>>(
-        '${ApiConstants.adminAcademicClasses}/$classId/class-teacher/$teacherId',
-        options: options,
-      );
-
-      final data = response.data?['data'] as Map<String, dynamic>? ?? {};
-      return AcademicClassModel.fromJson(data);
-    } on DioException catch (e) {
-      throw _mapDioException(e);
-    }
-  }
-
-  /// GET /api/admin/academic/unassigned-students
   Future<List<ClassStudentModel>> getUnassignedStudents() async {
     try {
       final options = await _authOptions();
       final response = await _apiClient.get<Map<String, dynamic>>(
-        '${ApiConstants.adminAcademicClasses.replaceAll('/classes', '')}/unassigned-students',
+        '/api/admin/academic/classes/unassigned-students',
         options: options,
       );
-
       final data = response.data?['data'];
       if (data is List) {
         return data
@@ -389,6 +403,18 @@ class AcademicAdminRemoteDataSource {
             .toList();
       }
       return [];
+    } on DioException catch (e) {
+      throw _mapDioException(e);
+    }
+  }
+
+  Future<void> addStudentToClass(int classId, int studentId) async {
+    try {
+      final options = await _authOptions();
+      await _apiClient.post<dynamic>(
+        '/api/admin/academic/classes/$classId/students/$studentId',
+        options: options,
+      );
     } on DioException catch (e) {
       throw _mapDioException(e);
     }

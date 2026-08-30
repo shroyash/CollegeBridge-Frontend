@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/storage/secure_storage_service.dart';
 import 'package:bridge_mobile/features/auth/presentation/controllers/institution_provider.dart';
 import '../controllers/dashboard_providers.dart';
 import '../controllers/dashboard_state.dart';
 import '../../domain/entities/subject.dart';
 import '../widgets/subject_card.dart';
 import 'student_profile_screen.dart';
+import 'help_and_support_screen.dart';
 import 'package:bridge_mobile/features/institution_admin/presentation/controllers/role_academic_providers.dart';
-import 'package:bridge_mobile/features/institution_admin/presentation/screens/student_class_screen.dart';
 import 'package:bridge_mobile/features/institution_admin/presentation/screens/student_classes_screen.dart';
 import 'package:bridge_mobile/features/institution_admin/presentation/screens/student_subject_detail_screen.dart';
 import 'package:bridge_mobile/features/institution_admin/presentation/screens/subject_members_screen.dart';
@@ -187,8 +186,18 @@ class _StudentDashboardScreenState
                           Row(
                             children: [
                               Expanded(
-                                  child: _buildActionBtn(Icons.help_outline,
-                                      'Ask Doubt', const Color(0xFF2563EB))),
+                                  child: _buildActionBtn(
+                                      Icons.help_outline,
+                                      'Ask Doubt',
+                                      const Color(0xFF2563EB),
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => const HelpAndSupportScreen(),
+                                          ),
+                                        );
+                                      })),
                               const SizedBox(width: 16),
                               Expanded(
                                   child: _buildActionBtn(

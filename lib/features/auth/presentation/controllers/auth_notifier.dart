@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/error/auth_exceptions.dart';
 import '../../../../core/storage/secure_storage_service.dart';
-import '../../domain/entities/faculty.dart';
 import '../../domain/usecases/login_usecase.dart';
 import '../../domain/usecases/register_usecase.dart';
 import 'auth_state.dart';
@@ -72,8 +71,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     required String name,
     required String email,
     required String password,
-    required Faculty faculty,
-    required int semester,
+    required int levelId,
   }) async {
     state = const AuthLoading();
     try {
@@ -82,8 +80,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         name: name,
         email: email,
         password: password,
-        faculty: faculty,
-        semester: semester,
+        levelId: levelId,
       );
       await _storageService.saveTokens(
         accessToken: user.accessToken,

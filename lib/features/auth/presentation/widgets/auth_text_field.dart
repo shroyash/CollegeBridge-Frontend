@@ -15,6 +15,7 @@ class AuthTextField extends StatelessWidget {
   final TextInputAction textInputAction;
   final FocusNode? focusNode;
   final VoidCallback? onEditingComplete;
+  final ValueChanged<String>? onFieldSubmitted;
   final TextCapitalization textCapitalization;
 
   const AuthTextField({
@@ -29,6 +30,7 @@ class AuthTextField extends StatelessWidget {
     this.textInputAction = TextInputAction.next,
     this.focusNode,
     this.onEditingComplete,
+    this.onFieldSubmitted,
     this.textCapitalization = TextCapitalization.none,
   });
 
@@ -55,6 +57,7 @@ class AuthTextField extends StatelessWidget {
           textCapitalization: textCapitalization,
           focusNode: focusNode,
           onEditingComplete: onEditingComplete,
+          onFieldSubmitted: onFieldSubmitted,
           validator: validator,
           style: const TextStyle(
             fontSize: 15,
